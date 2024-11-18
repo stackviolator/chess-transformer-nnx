@@ -97,5 +97,5 @@ if __name__ == "__main__":
 
     tokenizer.load_tokenizer("./tokenizer/vocab.json")
     seq = tokenizer.encode(test_game)
-    seq = tokenizer.decode(seq))
+    seq = tokenizer.decode(seq)
     print(tokenizer.decode([443]))
