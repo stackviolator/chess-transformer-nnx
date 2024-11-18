@@ -92,10 +92,9 @@ if __name__ == "__main__":
 
 
     tokenizer = ChessTokenizer()
-    # tokenizer.train()
-    # tokenizer.save_tokenizer()
+    tokenizer.train()
+    tokenizer.save_tokenizer(outfile="./tokenizer/vocab_new.json")
 
     tokenizer.load_tokenizer("./tokenizer/vocab.json")
     seq = tokenizer.encode(test_game)
     seq = tokenizer.decode(seq)
-    print(tokenizer.decode([443]))

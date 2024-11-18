@@ -5,10 +5,10 @@ import os
 # Define the path to the input PGN file
 input_file_dir = "./data/games/"
 output_file_dir = "./data/clean/"
-output_data = []
 
 for (_, _, files) in os.walk(input_file_dir):
     for file in files:
+        output_data = []
         if file.endswith(".pgn"):
             input_file = input_file_dir + file
             output_file = output_file_dir + file[:-4] + ".txt"
@@ -41,6 +41,7 @@ for (_, _, files) in os.walk(input_file_dir):
                         o.append('<|endofgame|>')
 
                         output_data.append(o)
+
             with open(output_file, 'w') as f:
                 print(f"Writing data to {output_file}")
                 for game in output_data:
@@ -48,3 +49,5 @@ for (_, _, files) in os.walk(input_file_dir):
                         f.write(move)
                         f.write("\n")
                 f.close()
+
+            del output_data
