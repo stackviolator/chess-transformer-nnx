@@ -15,17 +15,18 @@ class ChessTokenizer:
         self.output_file = output_file
         self.tokens = dict()
 
-    def train(self):
+    def train(self, input_dir=None):
         """
         Creates the vocab for the tokenizer
         Vocab will be in format {str:int}
         """
+        input_dir = self.input_file_dir if input_dir is None else input_dir
         for tok in spec_tokens:
             self.tokens[tok] = len(self.tokens)
 
-        for (_, _, files) in os.walk(input_file_dir):
+        for (_, _, files) in os.walk(input_dir):
             for file in files:
-                with open(input_file_dir + file, 'r') as game_file:
+                with open(input_dir + file, 'r') as game_file:
                     for line in game_file:
                         new_tok = line.strip()
                         if new_tok not in self.tokens:
@@ -70,7 +71,6 @@ class ChessTokenizer:
         seq = jnp.empty([len(moves)], dtype=int)
 
         for i, move in enumerate(moves):
-            ##seq[i] = self.tokens[move]
             seq = seq.at[i].set(int(self.tokens[move]))
 
         return seq
@@ -97,5 +97,5 @@ if __name__ == "__main__":
 
     tokenizer.load_tokenizer("./tokenizer/vocab.json")
     seq = tokenizer.encode(test_game)
-    seq = tokenizer.decode(seq)
-    print(seq)
+    seq = tokenizer.decode(seq))
+    print(tokenizer.decode([443]))
