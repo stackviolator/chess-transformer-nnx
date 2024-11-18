@@ -67,11 +67,11 @@ class ChessTokenizer:
         """
         Encode sequence of moves to tokens
         """
-        seq = jnp.empty([len(moves)])
+        seq = jnp.empty([len(moves)], dtype=int)
 
         for i, move in enumerate(moves):
             ##seq[i] = self.tokens[move]
-            seq = seq.at[i].set(self.tokens[move])
+            seq = seq.at[i].set(int(self.tokens[move]))
 
         return seq
 
@@ -98,3 +98,4 @@ if __name__ == "__main__":
     tokenizer.load_tokenizer("./tokenizer/vocab.json")
     seq = tokenizer.encode(test_game)
     seq = tokenizer.decode(seq)
+    print(seq)
