@@ -2,7 +2,7 @@ import os
 import json
 import jax.numpy as jnp
 
-spec_tokens = ['UNK', '<|startofgame|>', '<|endofgame|>']
+spec_tokens = ['[UNK]', '[PAD]', '<|startofgame|>', '<|endofgame|>']
 input_file_dir = "./data/clean/"
 
 class ChessTokenizer:
@@ -75,6 +75,15 @@ class ChessTokenizer:
 
         return seq
 
+    def encode_and_pad(self, moves: list, context_length: int) -> jnp.ndarray:
+        # TODO write unittest if the context_length - length is 0 (lenth = ids.shape[0])
+        ids = self.encode(moves)
+        pad_arr = jnp.repeat(jnp.array([self.tokens["[PAD]"]]), context_length - ids.shape[0])
+
+        ids = jnp.concat([ids, pad_arr])
+        return ids
+
+
     def decode(self, tokens: jnp.ndarray) -> list:
         """
         Decode tokens to array of moves
@@ -92,9 +101,9 @@ if __name__ == "__main__":
 
 
     tokenizer = ChessTokenizer()
-    tokenizer.train()
-    tokenizer.save_tokenizer(outfile="./tokenizer/vocab_new.json")
-
+    # tokenizer.train()
+    # tokenizer.save_tokenizer()
     tokenizer.load_tokenizer("./tokenizer/vocab.json")
-    seq = tokenizer.encode(test_game)
-    seq = tokenizer.decode(seq)
+
+    ids = tokenizer.encode_and_pad(test_game, 128)
+    print(ids)
