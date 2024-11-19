@@ -21,8 +21,6 @@ class ChessTokenizer:
         Vocab will be in format {str:int}
         """
         input_dir = self.input_file_dir if input_dir is None else input_dir
-        for tok in spec_tokens:
-            self.tokens[tok] = len(self.tokens)
 
         for (_, _, files) in os.walk(input_dir):
             for file in files:
@@ -33,6 +31,9 @@ class ChessTokenizer:
                             self.tokens[new_tok] = len(self.tokens)
 
                 game_file.close()
+
+        for tok in spec_tokens:
+            self.tokens[tok] = len(self.tokens)
 
     def save_tokenizer(self, outfile=None):
         """
