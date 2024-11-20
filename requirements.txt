@@ -6,3 +6,4 @@ flax
 einops
 optax
 wandb
+transformer_lens

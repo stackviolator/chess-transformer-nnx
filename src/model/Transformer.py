@@ -16,25 +16,27 @@ class TransformerConfig:
     n_heads: int = 4
     ctx_len: int = 256
     stddev: float = 0.02
+    ln_eps: float = 1e-5
     d_mlp: int = d_model*4
 
 class LayerNorm(nnx.Module):
-    def __init__(self, cfg: TransformerConfig, eps: float = 1e-05):
+    def __init__(self, cfg: TransformerConfig):
         key = jax.random.PRNGKey(101)
         self.cfg = cfg
         self.d_model = self.cfg.d_model
         self.w = nnx.Param(jax.random.normal(key, (self.d_model))) # [d_model]
         self.b = nnx.Param(jnp.zeros(self.d_model,)) # [d_model]
-        self.eps = eps
+        self.eps = self.cfg.ln_eps
     
     def __call__(self, residual: jax.Array):
         # resdiual: [batch x len x d_model]
         # Make mean 0 and normalize to have variance 1
-        y = (residual - jnp.mean(residual, axis=1, keepdims=True)) / (jnp.sqrt(jnp.var(residual) + self.eps))
+        res_mean = jnp.mean(residual, axis=-1, keepdims=True)
+        res_std = jnp.sqrt(jnp.var(residual, axis=-1, keepdims=True) + self.eps)
         # Scale with learned weights
-        y = y * self.w
+        y = (residual - res_mean) / res_std
         # Translate with learned bias
-        y = y + self.b
+        y = y * self.w + self.b
         
         return y
     
@@ -92,16 +94,16 @@ class Attention(nnx.Module):
         attn_probs = jax.nn.softmax(attn_scores, axis=-1) # [batch x n_heads x q_pos x k_pos]
 
         # [batch x q_pos x n_heads x d_head]
-        z = jnp.einsum('bnqk, bknh -> bqnh', attn_probs, v)
+        z = jnp.einsum('bknh, bnqk -> bqnh', v, attn_probs)
 
-        out = jnp.einsum('bqnh, nhm -> bqnm', z, self.W_O.value)
-        out = jnp.einsum('bqnm -> bqm', out) + self.b_O
+        out = jnp.einsum('bqnh, nhm -> bqm', z, self.W_O.value) + self.b_O
         return out
 
     def apply_casual_mask(self, attn_scores: jnp.ndarray) -> jnp.ndarray:
+        all_ones = jnp.ones((attn_scores.shape[-2], attn_scores.shape[-1]))
         # attn_scores: [batch n_heads q_pos k_pos]
-        mask = jnp.triu(attn_scores).astype(bool)
-        masked_attn_scores = jnp.where(mask,jax.lax.broadcast(-jnp.inf, attn_scores.shape), attn_scores)
+        mask = jnp.triu(all_ones, k=1).astype(bool)
+        masked_attn_scores = jnp.where(mask, jax.lax.broadcast(-jnp.inf, attn_scores.shape), attn_scores)
         
         return masked_attn_scores
     
@@ -136,9 +138,9 @@ class TransformerBlock(nnx.Module):
         self.mlp = MLP(self.cfg)
 
     def __call__(self, resid_pre: jnp.ndarray) -> jnp.ndarray:
-        resid_mid = self.attn(self.ln1(resid_pre))
-        resid_post = self.mlp(self.ln2(resid_pre))
-        return(resid_post)
+        resid_mid = self.attn(self.ln1(resid_pre)) + resid_pre
+        resid_post = self.mlp(self.ln2(resid_mid)) + resid_mid
+        return resid_post
     
 class Unembed(nnx.Module):
     def __init__(self, cfg: TransformerConfig):

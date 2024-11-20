@@ -3,8 +3,11 @@ from src.model.Trainer import TransformerTrainingArgs, TransformerTrainer
 from src.model.Transformer import Transformer, TransformerConfig
 from src.tokenizer.tokenizer import ChessTokenizer
 from torch.utils.data import DataLoader
+import warnings
 
 if __name__ == "__main__":
+    warnings.filterwarnings("ignore", category=FutureWarning)
+
     # Tokenizer
     tokenizer = ChessTokenizer()
     tokenizer.load_tokenizer("src/tokenizer/vocab.json")
