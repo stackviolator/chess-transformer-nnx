@@ -1,0 +1,8 @@
+tqdm
+torch
+scikit-learn
+jax
+flax
+einops
+optax
+wandb
