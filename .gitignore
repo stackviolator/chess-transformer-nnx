@@ -1,3 +1,22 @@
 NOTES.md
 data/
 !data/.gitkeep
+wandb/
+
+# Ignore Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Ignore virtual environments (if any)
+venv/
+env/
+
+# Ignore other common temporary files
+*.log
+*.tmp
+*.swp
+.DS_Store
+
+# Ignore vscode files
+.vscode
