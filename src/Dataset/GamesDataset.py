@@ -1,11 +1,10 @@
-import mmap
 import csv
-from tqdm import tqdm
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
-from sklearn.model_selection import train_test_split
-from torch.utils.data import Subset
 import jax.numpy as jnp
+import mmap
+from sklearn.model_selection import train_test_split
+from torch.utils.data import Dataset
+from torch.utils.data import Subset
+from tqdm import tqdm
 
 
 # Lots of inspo taken from https://github.com/codyjk/ChessGPT/blob/main/src/chess_model/data/dataset.py -- thank you :^)
