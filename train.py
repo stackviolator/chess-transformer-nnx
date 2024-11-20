@@ -15,8 +15,11 @@ if __name__ == "__main__":
     )
 
     # Traning args
-    args = TransformerTrainingArgs()
-    args = TransformerTrainingArgs(epochs=15, max_steps_per_epoch=500)
+    args = TransformerTrainingArgs(
+        epochs=15,
+        max_steps_per_epoch=500,
+        debug=False,
+        )
 
     transformer = Transformer(cfg)
 

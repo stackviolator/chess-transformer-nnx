@@ -78,8 +78,11 @@ class ChessTokenizer:
 
     def encode_and_pad(self, moves: list, context_length: int) -> jnp.ndarray:
         # TODO write unittest if the context_length - length is 0 (lenth = ids.shape[0])
+        if len(moves) >= context_length - 2: # need to make space for start and end of game tokens
+            moves = moves [:context_length-2]
         ids = self.encode(moves)
-        pad_arr = jnp.repeat(jnp.array([self.tokens["[PAD]"]]), context_length - ids.shape[0])
+
+        pad_arr = jnp.repeat(jnp.array([self.tokens["[PAD]"]]), context_length - ids.shape[0]) # TODO: error here when we exceed context len
 
         ids = jnp.concat([ids, pad_arr])
         return ids

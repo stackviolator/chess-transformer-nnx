@@ -15,6 +15,7 @@ class TransformerTrainingArgs():
     weight_decay = 1e-2
     wandb_project: str | None = "ChessTransformer"
     wandb_name: str | None = None
+    debug: bool = False
 
 class TransformerTrainer:
     def __init__(self, args: TransformerTrainingArgs, model: Transformer, train_loader, test_loader):
@@ -36,7 +37,8 @@ class TransformerTrainer:
         self.optimizer.update(grads)
 
         self.step += 1
-        wandb.log({"train_loss":loss}, step=self.step)
+        if self.args.debug == False:
+            wandb.log({"train_loss":loss}, step=self.step)
         return loss
 
     def validation_step(self, batch: dict) -> jnp.ndarray:
@@ -48,7 +50,8 @@ class TransformerTrainer:
         return correct
 
     def train(self):
-        wandb.init(project=self.args.wandb_project, name=self.args.wandb_name, config=self.args)
+        if self.args.debug == False:
+            wandb.init(project=self.args.wandb_project, name=self.args.wandb_name, config=self.args)
         accuracy = jnp.nan
         total_steps = self.args.epochs * self.args.max_steps_per_epoch
 
@@ -63,9 +66,11 @@ class TransformerTrainer:
 
                 correct = jnp.concat([self.validation_step(batch) for batch in self.test_loader])
                 accuracy = jnp.mean(correct)
-                wandb.log({"accuracy":accuracy}, step=self.step)
+                if self.args.debug == False:
+                    wandb.log({"accuracy":accuracy}, step=self.step)
 
-        wandb.finish()
+        if self.args.debug == False:
+            wandb.finish()
 
     # TODO write unittest for this PLEASE
     def get_log_probs(self, logits: jnp.ndarray, tokens: jnp.ndarray) -> jnp.ndarray:
