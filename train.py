@@ -14,6 +14,10 @@ if __name__ == "__main__":
         d_model=64,
     )
 
+    # Traning args
+    args = TransformerTrainingArgs()
+    args = TransformerTrainingArgs(epochs=15, max_steps_per_epoch=500)
+
     transformer = Transformer(cfg)
 
     # Dataset and loaders
@@ -26,9 +30,6 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=True, collate_fn=GamesDataset.collate_fn)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=True, collate_fn=GamesDataset.collate_fn)
 
-    # Traning args
-    args = TransformerTrainingArgs()
-    args = TransformerTrainingArgs(epochs=15, max_steps_per_epoch=500)
 
     # Train the model
     trainer = TransformerTrainer(args, transformer, train_loader=train_loader, test_loader=test_loader)

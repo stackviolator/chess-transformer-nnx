@@ -3,7 +3,7 @@ import einops
 from flax import nnx
 import jax.numpy as jnp
 import jax
-from tokenizer.tokenizer import ChessTokenizer
+from src.tokenizer.tokenizer import ChessTokenizer
 from torch.utils.data import Dataset
 
 @dataclass
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     batched_input_ids = jnp.expand_dims(input_ids, 0)
 
     transformer = Transformer(cfg)
-
     logits = transformer(batched_input_ids)
+
     greedy_pred = jax.nn.softmax(logits[0,-1], axis=-1).argmax()
     print(f"Next predicted move is: {tokenizer.decode([greedy_pred])[0]}")

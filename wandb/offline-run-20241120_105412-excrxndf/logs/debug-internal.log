@@ -1,0 +1,15 @@
+{"time":"2024-11-20T10:54:12.655906-06:00","level":"INFO","msg":"using version","core version":"0.18.7"}
+{"time":"2024-11-20T10:54:12.655952-06:00","level":"INFO","msg":"created symlink","path":"/Users/wizard/projects/chess/wandb/offline-run-20241120_105412-excrxndf/logs/debug-core.log"}
+{"time":"2024-11-20T10:54:13.174609-06:00","level":"INFO","msg":"created new stream","id":"excrxndf"}
+{"time":"2024-11-20T10:54:13.174648-06:00","level":"INFO","msg":"stream: started","id":"excrxndf"}
+{"time":"2024-11-20T10:54:13.174655-06:00","level":"INFO","msg":"handler: started","stream_id":"excrxndf"}
+{"time":"2024-11-20T10:54:13.174667-06:00","level":"INFO","msg":"sender: started","stream_id":"excrxndf"}
+{"time":"2024-11-20T10:54:13.174687-06:00","level":"INFO","msg":"writer: Do: started","stream_id":"excrxndf"}
+{"time":"2024-11-20T10:54:13.17942-06:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-11-20T10:54:14.232869-06:00","level":"INFO","msg":"stream: closing","id":"excrxndf"}
+{"time":"2024-11-20T10:54:14.232889-06:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-11-20T10:54:14.233132-06:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-11-20T10:54:14.233205-06:00","level":"INFO","msg":"handler: closed","stream_id":"excrxndf"}
+{"time":"2024-11-20T10:54:14.233208-06:00","level":"INFO","msg":"writer: Close: closed","stream_id":"excrxndf"}
+{"time":"2024-11-20T10:54:14.233212-06:00","level":"INFO","msg":"sender: closed","stream_id":"excrxndf"}
+{"time":"2024-11-20T10:54:14.233333-06:00","level":"INFO","msg":"stream: closed","id":"excrxndf"}

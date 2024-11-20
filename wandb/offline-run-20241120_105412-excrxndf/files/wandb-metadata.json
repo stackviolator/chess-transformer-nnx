@@ -1,0 +1,38 @@
+{
+  "os":  "macOS-15.1-arm64-arm-64bit",
+  "python":  "3.12.7",
+  "startedAt":  "2024-11-20T16:54:12.619589Z",
+  "program":  "/Users/wizard/projects/chess/train.py",
+  "codePath":  "train.py",
+  "git":  {
+    "remote":  "https://github.com/stackviolator/chess.git",
+    "commit":  "1adf3386dc77c7d4ecbd35a3f3d7fc9867d837c9"
+  },
+  "root":  "/Users/wizard/projects/chess",
+  "host":  "orbball",
+  "username":  "wizard",
+  "executable":  "/Users/wizard/llms/bin/python3",
+  "codePathLocal":  "train.py",
+  "cpu_count":  12,
+  "cpu_count_logical":  12,
+  "disk":  {
+    "/":  {
+      "total":  "994662584320",
+      "used":  "708816056320"
+    }
+  },
+  "memory":  {
+    "total":  "38654705664"
+  },
+  "cpu":  {
+    "count":  12,
+    "countLogical":  12
+  },
+  "apple":  {
+    "name":  "Apple M3 Pro",
+    "ecpuCores":  6,
+    "pcpuCores":  6,
+    "gpuCores":  18,
+    "memoryGb":  36
+  }
+}
