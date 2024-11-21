@@ -1,3 +1,4 @@
+import csv
 import os
 import json
 import jax.numpy as jnp
@@ -21,19 +22,19 @@ class ChessTokenizer:
         Vocab will be in format {str:int}
         """
         input_dir = self.input_file_dir if input_dir is None else input_dir
-
-        for (_, _, files) in os.walk(input_dir):
+        for _, _, files in os.walk(input_dir):
             for file in files:
-                with open(input_dir + file, 'r') as game_file:
-                    for line in game_file:
-                        new_tok = line.strip()
-                        if new_tok not in self.tokens:
-                            self.tokens[new_tok] = len(self.tokens)
-
-                game_file.close()
+                file_path = os.path.join(input_dir, file)
+                with open(file_path, 'r') as csv_file:
+                    csv_reader = csv.DictReader(csv_file)
+                    for row in csv_reader:
+                        moves = row['Moves']
+                        for move in moves.split():
+                            stripped_move = move.strip()
+                            self.tokens.setdefault(stripped_move, len(self.tokens))
 
         for tok in spec_tokens:
-            self.tokens[tok] = len(self.tokens)
+            self.tokens.setdefault(tok, len(self.tokens))
 
     def save_tokenizer(self, outfile=None):
         """

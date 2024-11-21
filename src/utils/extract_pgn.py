@@ -1,69 +1,82 @@
 import chess.pgn
+from chess.pgn import read_game
 import os
-from concurrent.futures import ProcessPoolExecutor
+import csv
 
-def process_file(file):
-    input_file_dir = "./data/games/"
-    output_file_dir = "./data/clean/"
+input_file = "./data/raw/lichess_db_standard_rated_2024-10.pgn"
+output_file_dir = "./data/clean/"
 
-    output_data = []
-    if file.endswith(".pgn"):
-        input_file = os.path.join(input_file_dir, file)
-        output_file = os.path.join(output_file_dir, file[:-4] + ".txt")
+def extract_moves_from_pgn(pgn_file):
+    """
+    Extracts and saves a list of moves, checkmate status, and game result from a PGN file into a CSV.
+    Args:
+        pgn_file (str): Path to the PGN file.
+    """
+    output_file = output_file_dir + 'games_data.csv'
+    batch_size = 1000
+    outputs = []
 
-        with open(input_file, "r", encoding="utf-8") as pgn_file:
-            while True:
-                game = chess.pgn.read_game(pgn_file)
-                if game is None:
-                    break
+    with open(pgn_file, "r", encoding="utf-8") as file, open(output_file, 'w', encoding="utf-8", newline='') as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(["Moves", "IsCheckmate", "Outcome"])  # CSV header
 
-                # Extract the headers
-                white_elo = game.headers.get("WhiteElo")
-                black_elo = game.headers.get("BlackElo")
-                result = game.headers.get("Result")
+        while True:
+            game = chess.pgn.read_game(file)
+            if game is None:
+                break
 
-                try:
-                    white_elo = int(white_elo) if white_elo and white_elo.isdigit() else None
-                    black_elo = int(black_elo) if black_elo and black_elo.isdigit() else None
-                except ValueError:
+            # Extract headers
+            white_elo = game.headers.get("WhiteElo")
+            black_elo = game.headers.get("BlackElo")
+            result = game.headers.get("Result", "Unknown")
+
+            try:
+                white_elo = int(white_elo) if white_elo and white_elo.isdigit() else None
+                black_elo = int(black_elo) if black_elo and black_elo.isdigit() else None
+            except ValueError:
+                continue
+
+            # Filter games where either player has an Elo rating over 2200
+            if (white_elo and white_elo > 2200) or (black_elo and black_elo > 2200):
+                moves = []
+                is_checkmate = False
+                node = game
+
+                # Traverse the moves
+                while node.variations:
+                    next_node = node.variation(0)
+                    san_move = node.board().san(next_node.move)
+                    moves.append(san_move)
+                    node = next_node
+
+                # Filter out games with 3 moves or less
+                if len(moves) <= 3:
                     continue
 
-                # Check if either player has an Elo rating over 2200
-                if (white_elo and white_elo > 2200) or (black_elo and black_elo > 2200):
-                    # Extract the move sequence
-                    moves = game.mainline_moves()
+                # Add start and end tokens
+                moves_string = "<|startofgame|> " + " ".join(moves) + " <|endofgame|>"
 
-                    o = ['<|startofgame|>']
-                    for m in moves:
-                        o.append(str(m))
-                    o.append(result)
-                    o.append('<|endofgame|>')
+                # Determine if the game ended with a checkmate
+                if node.board().is_checkmate():
+                    is_checkmate = True
 
-                    output_data.append(o)
+                # Prepare the output row
+                outputs.append([moves_string, is_checkmate, result])
 
-        # Write the output data
-        with open(output_file, 'w') as f:
-            print(f"Writing data to {output_file}")
-            for game in output_data:
-                for move in game:
-                    f.write(move)
-                    f.write("\n")
+                # Write to CSV in batches
+                if len(outputs) >= batch_size:
+                    print(f"Writing {len(outputs)} rows to {output_file}")
+                    writer.writerows(outputs)
+                    outputs = []  # Clear the buffer
 
-    return f"Processed {file}"
+        # Final write for any remaining outputs
+        if outputs:
+            print(f"Writing {len(outputs)} rows to {output_file}")
+            writer.writerows(outputs)
 
 def main():
-    input_file_dir = "./data/games/"
-
     # Collect all PGN files
-    files = [file for _, _, files in os.walk(input_file_dir) for file in files if file.endswith(".pgn")]
-
-    # Use ProcessPoolExecutor for parallel processing
-    with ProcessPoolExecutor() as executor:
-        results = executor.map(process_file, files)
-
-    for result in results:
-        print(result)
+    extract_moves_from_pgn(input_file)
 
 if __name__ == "__main__":
     main()
-
