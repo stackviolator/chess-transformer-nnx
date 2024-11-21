@@ -5,6 +5,7 @@ import numpy as np
 from transformer_lens import HookedTransformer
 import torch as t
 import unittest
+import src.model.Transformer as Transformer
 
 cfg = Transformer.TransformerConfig(
     d_model=768,
@@ -70,56 +71,49 @@ def load_gpt2_test(cls, gpt2_layer, input, debug=False):
 
     return comparison
 
-class TestLayerNorm(unittest.TestCase):
+class TestTransformer(unittest.TestCase):
     def test_layernorm(self):
         print(f"Testing layernorm")
         comp = load_gpt2_test(Transformer.LayerNorm(cfg), reference_gpt2.ln_final, cache['resid_post', 11])
         # Ensure all vals in comp are "True"
         self.assertTrue(True and t.all(comp))
 
-class TestEmbed(unittest.TestCase):
     def test_embed(self):
         print(f"Testing embed")
         comp = load_gpt2_test(Transformer.Embed(cfg), reference_gpt2.embed, tokens)
         # Ensure all vals in comp are "True"
         self.assertTrue(True and t.all(comp))
 
-class TestPosEmbed(unittest.TestCase):
     def test_pos_embed(self):
         print(f"Testing positional embed")
         comp = load_gpt2_test(Transformer.PosEmbed(cfg), reference_gpt2.pos_embed, tokens)
         # Ensure all vals in comp are "True"
         self.assertTrue(True and t.all(comp))
 
-class TestAttention(unittest.TestCase):
     def test_attention(self):
         print(f"Testing attention")
         comp = load_gpt2_test(Transformer.Attention(cfg, rngs=nnx.Rngs(params=0)), reference_gpt2.blocks[0].attn, cache["normalized", 0, "ln1"])
         # Ensure all vals in comp are "True"
         self.assertTrue(True and t.all(comp))
 
-class TestMLP(unittest.TestCase):
     def test_mlp(self):
         print(f"Testing MLP")
         comp = load_gpt2_test(Transformer.MLP(cfg), reference_gpt2.blocks[0].mlp, cache["normalized", 0, "ln2"])
         # Ensure all vals in comp are "True"
         self.assertTrue(True and t.all(comp))
 
-class TestTransformerBlock(unittest.TestCase):
     def test_transformer_block(self):
         print(f"Testing transformer block")
         comp = load_gpt2_test(Transformer.TransformerBlock(cfg), reference_gpt2.blocks[0], cache["resid_pre", 0])
         # Ensure all vals in comp are "True"
         self.assertTrue(True and t.all(comp))
 
-class TestUnembed(unittest.TestCase):
     def test_unembed(self):
         print(f"Testing unembed")
         comp = load_gpt2_test(Transformer.Unembed(cfg), reference_gpt2.unembed, cache["ln_final.hook_normalized"])
         # Ensure all vals in comp are "True"
         self.assertTrue(True and t.all(comp))
 
-class TestTransformer(unittest.TestCase):
     def test_transformer(self):
         print(f"Testing transformer")
         comp = load_gpt2_test(Transformer.Transformer(cfg), reference_gpt2, tokens)
