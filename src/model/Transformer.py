@@ -18,6 +18,7 @@ class TransformerConfig:
     stddev: float = 0.02
     ln_eps: float = 1e-5
     d_mlp: int = d_model*4
+    pad_token_id: int | None = None
 
 class LayerNorm(nnx.Module):
     def __init__(self, cfg: TransformerConfig):
@@ -183,7 +184,8 @@ if __name__ == "__main__":
     tokenizer = ChessTokenizer()
     tokenizer.load_tokenizer("src/tokenizer/vocab.json")
 
-    test_game = ["<|startofgame|>", "e2e4", "c7c5", "g1f3", "d7d6", "f1b5", "c8d7", "d1e2", "g8f6", "b2b3", "e7e6", "c1b2", "f8e7", "e4e5", "d6e5", "f3e5", "e8g8", "e1g1", "a7a6", "e5d7", "b8d7", "b5d3", "b7b5", "a2a4", "c5c4", "b3c4", "b5b4", "d3e4", "a8b8", "d2d3", "a6a5", "b1d2", "d7c5", "b2e5", "b8b6", "e4f3", "d8d7", "d2b3", "b6a6", "b3c5", "e7c5", "d3d4", "c5e7", "f1d1", "f8c8", "c4c5", "a6a7", "e2b5", "f6d5", "b5d7", "a7d7", "d1d3", "f7f6", "f3g4", "g8f7", "e5g3", "f6f5", "g4h5", "g7g6", "h5f3", "e7f6", "g3d6", "d7d6", "c5d6", "c8c2", "f3d5", "e6d5", "a1e1", "c2c6", "d6d7", "c6d6", "e1e8", "d6d7", "e8a8", "f6d8", "g2g3", "f7e6", "a8a6", "e6f7", "g1g2", "g6g5", "g2f3", "d8c7", "a6a7", "g5g4", "f3g2", "f7e6", "a7b7", "e6d6", "b7b5", "d7e7", "g2f1", "e7e4", "b5b7", "h7h5", "b7b5", "f5f4", "f2f3", "g4f3", "g3f4", "e4f4", "f1f2", "c7d8", "b5b7", "d8h4", "f2f1", "f3f2", "b7b6", "1-0", "<|endofgame|>"]
+    # test_game = ["<|startofgame|>", "d4", "e6", "Bf4", "d5", "e3", "Nf6", "Nc3", "Bd6", "Bg3", "Bxg3", "hxg3", "c5", "Qd3", "cxd4", "exd4", "Nc6", "g4", "g6", "g5", "Ne4", "Nxe4", "dxe4", "Qxe4", "f5", "Qh4", "Rf7", "Ne5", "Nxe5", "dxe5", "Qa5+", "c3", "Qxe5+", "Kd2", "b6", "Re1", "Qa5", "a3", "Ba6", "Bxa6", "Qxa6", "Qd4", "Rff8", "Kc2", "Qb5", "Rxe6", "Rad8", "Qe3", "Qa4+", "Kb1", "Rd1+", "Rxd1", "Qxd1+", "Ka2", "Qd8", "Re7", "Qd5+", "b3", "Rf7", "Re8+", "Kg7", "Kb2", "Rd7", "Re7+", "Rxe7", "Qxe7+", "Kg8", "Qe8+", "Kg7", "Qe7+", "Kg8", "Qxa7", "Qd2+", "Kb1", "Qxg5", "Qb8+", "Kg7", "a4", "Qg4", "Qxb6", "Qxg2", "Qe3", "Qf1+", "Kb2", "Qg2", "Qd4+", "Kh6", "a5", "f4", "Qxf4+", "g5", "Qd4", "Qf3", "a6", "Qf7", "a7", "Qe7", "b4", "Qe2+", "Kb3", "Qe7", "Qc5", "Qe6+", "Qc4", "Qe3", "Qc5", "Qe1", "a8=Q", "Qb1+", "Kc4", "Qa1", "Qcc6+", "<|endofgame|>"]
+    test_game = ["<|startofgame|>", "d4", "e6", "Bf4", "d5", "e3", "Nf6", "Nc3", "Bd6", "Bg3", "Bxg3"]
     input_ids = tokenizer.encode_and_pad(test_game, cfg.ctx_len)
     batched_input_ids = jnp.expand_dims(input_ids, 0)
 

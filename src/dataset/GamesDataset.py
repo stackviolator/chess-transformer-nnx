@@ -75,6 +75,8 @@ class GamesDataset(Dataset):
             labels = context[1:] + [last_move]
             labels = self.tokenizer.encode_and_pad(labels, self.context_length)
 
+            # One hot encode the labels
+
             # If white won, we want the model to learn from white's moves, not black's.
             # Conversely, if black won, we want the model to learn from black's moves.
             # For draws, we want the model to learn from both moves.
@@ -104,7 +106,7 @@ class GamesDataset(Dataset):
                 outcome_label = outcome_label.at[2].set(1.0)
 
             items["input_ids"] = jnp.concat((items["input_ids"], jnp.array(jnp.expand_dims(input_ids, axis=0), dtype=jnp.int32))) # expand dims to add empty batch dim
-            items["labels"] = jnp.concat((items["labels"], jnp.array(jnp.expand_dims(input_ids, axis=0), dtype=jnp.int32)))
+            items["labels"] = jnp.concat((items["labels"], jnp.array(jnp.expand_dims(labels, axis=0), dtype=jnp.int32)))
             items["is_checkmate"] = jnp.concat((items["is_checkmate"], jnp.array(jnp.expand_dims(is_checkmate, axis=1), dtype=jnp.int32)))
             items["outcome"] = jnp.concat((items["outcome"], jnp.expand_dims(outcome_label, axis=0)))
             items["move_mask"] = jnp.concat((items["move_mask"], jnp.expand_dims(move_mask, axis=0)))

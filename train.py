@@ -15,6 +15,9 @@ if __name__ == "__main__":
     tokenizer = ChessTokenizer()
     tokenizer.load_tokenizer("src/tokenizer/vocab.json")
 
+
+    pad_token_id = int(tokenizer.encode(["[PAD]"])[0])
+
     # The model config and model itself
     cfg = TransformerConfig(
         d_model=768,
@@ -23,8 +26,14 @@ if __name__ == "__main__":
         d_mlp=3072,
         n_heads=12,
         n_layers=12,
-        ctx_len=100
+        ctx_len=128,
+        pad_token_id=pad_token_id
     )
+
+    '''
+    Note on ctx_len:
+    this will prob need to be played with. since there is a bunch of padding.. however this might not be a big deal if i implement masked loss
+    '''
 
     # Traning args
     args = TransformerTrainingArgs(

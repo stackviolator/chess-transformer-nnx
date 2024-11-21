@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from flax import nnx
 import jax.numpy as jnp
+import jax
 import optax
 from src.model.Transformer import Transformer
 from tqdm import tqdm
@@ -28,10 +29,19 @@ class TransformerTrainer:
         self.test_loader = test_loader
 
     def training_step(self, batch: dict) -> jnp.ndarray:
+        if self.args.debug:
+            print("i am in debug lol")
         def loss_fn(model: Transformer):
             y_pred = model(batch["input_ids"])
-            log_probs = self.get_log_probs(y_pred, batch["input_ids"])
-            return -jnp.mean(log_probs)
+            # One hot encode the labels
+            labels = jax.nn.one_hot(batch["labels"], self.model.cfg.d_vocab)
+            # Create mask -- masks losing player's moves and pad tokens
+            pad_mask = batch["move_mask"] != self.model.cfg.pad_token_id
+            mask = batch["move_mask"] & pad_mask
+
+            log_probs = optax.softmax_cross_entropy(logits=y_pred, labels=labels)
+            masked_log_probs = jnp.where(mask, log_probs, 0.0)
+            return jnp.sum(masked_log_probs) / jnp.sum(mask)
 
         loss, grads = nnx.value_and_grad(loss_fn)(self.model)
         self.optimizer.update(grads)
