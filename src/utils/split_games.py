@@ -11,7 +11,7 @@ def split_games(input_file, output_dir="./data/games", chunk_size_mb=50):
     # Initialize variables
     current_size = 0
     chunk_index = 1
-    output_prefix = os.path.join(output_dir, "lichess_chunk")
+    output_prefix = os.path.join(output_dir, os.path.splitext(os.path.basename(input_file))[0] + "_chunk")
     output_file = f"{output_prefix}_{chunk_index}.pgn"
 
     # Open the first output file
@@ -45,10 +45,24 @@ def split_games(input_file, output_dir="./data/games", chunk_size_mb=50):
                 # Update the current size
                 current_size += line_size
 
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <input_file>")
+def process_directory(input_dir, output_dir="./data/games", chunk_size_mb=50):
+    # Ensure the input directory exists
+    if not os.path.isdir(input_dir):
+        print(f"Error: {input_dir} is not a valid directory.")
         sys.exit(1)
 
-    input_file = sys.argv[1]
-    split_games(input_file)
+    # Iterate over all .pgn files in the input directory
+    for file_name in os.listdir(input_dir):
+        if file_name.endswith(".pgn"):
+            input_file = os.path.join(input_dir, file_name)
+            print(f"Processing file: {input_file}")
+            split_games(input_file, output_dir, chunk_size_mb)
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print(f"Usage: {sys.argv[0]} <input_dir>")
+        sys.exit(1)
+
+    input_dir = sys.argv[1]
+    process_directory(input_dir)
+
