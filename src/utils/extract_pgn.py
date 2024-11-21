@@ -1,25 +1,23 @@
 import chess.pgn
-from chess.pgn import read_game
 import os
 import csv
+from concurrent.futures import ProcessPoolExecutor
 
-input_file = "./data/raw/lichess_db_standard_rated_2024-10.pgn"
-output_file_dir = "./data/clean/"
+input_directory = "./data/games/"
+output_file = "./data/clean/games_data.csv"
 
 def extract_moves_from_pgn(pgn_file):
     """
-    Extracts and saves a list of moves, checkmate status, and game result from a PGN file into a CSV.
+    Extracts and returns a list of moves, checkmate status, and game result from a PGN file.
     Args:
         pgn_file (str): Path to the PGN file.
+    Returns:
+        list: List of rows to be appended to the CSV.
     """
-    output_file = output_file_dir + 'games_data.csv'
     batch_size = 1000
     outputs = []
 
-    with open(pgn_file, "r", encoding="utf-8") as file, open(output_file, 'w', encoding="utf-8", newline='') as csv_file:
-        writer = csv.writer(csv_file)
-        writer.writerow(["Moves", "IsCheckmate", "Outcome"])  # CSV header
-
+    with open(pgn_file, "r", encoding="utf-8") as file:
         while True:
             game = chess.pgn.read_game(file)
             if game is None:
@@ -63,20 +61,36 @@ def extract_moves_from_pgn(pgn_file):
                 # Prepare the output row
                 outputs.append([moves_string, is_checkmate, result])
 
-                # Write to CSV in batches
+                # Return results in batches
                 if len(outputs) >= batch_size:
-                    print(f"Writing {len(outputs)} rows to {output_file}")
-                    writer.writerows(outputs)
-                    outputs = []  # Clear the buffer
+                    batch = outputs[:]
+                    outputs = []
+                    yield batch
 
-        # Final write for any remaining outputs
+        # Return any remaining outputs
+        print(f"Processed file {pgn_file}")
         if outputs:
-            print(f"Writing {len(outputs)} rows to {output_file}")
-            writer.writerows(outputs)
+            yield outputs
+
+def process_file(pgn_file):
+    """Helper function to extract data from a single PGN file."""
+    results = []
+    for batch in extract_moves_from_pgn(pgn_file):
+        results.extend(batch)
+    return results
 
 def main():
-    # Collect all PGN files
-    extract_moves_from_pgn(input_file)
+    # Collect all .pgn files in the input directory
+    pgn_files = [os.path.join(input_directory, f) for f in os.listdir(input_directory) if f.endswith(".pgn")]
+
+    # Process files in parallel
+    with ProcessPoolExecutor() as executor, open(output_file, 'w', encoding="utf-8", newline='') as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(["Moves", "IsCheckmate", "Outcome"])  # Write the CSV header
+
+        for file_results in executor.map(process_file, pgn_files):
+            writer.writerows(file_results)  # Append results to CSV
 
 if __name__ == "__main__":
     main()
+
