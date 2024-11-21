@@ -2,7 +2,6 @@ import jax
 import jax.numpy as jnp
 from flax import nnx
 import numpy as np
-import src.model.Transformer as Transformer
 from transformer_lens import HookedTransformer
 import torch as t
 import unittest
@@ -39,6 +38,7 @@ def load_gpt2_test(cls, gpt2_layer, input, debug=False):
     state_dict = gpt2_layer.state_dict()
     for k, v in state_dict.items():
         # this is a hack -- setattr(cls, "attn.W_V", ...) will make a new attrib called "attn.W_V" and not update the W_V attrib of the attn obj
+        # i doubt this is a robust solution, but i only need it for these tests .. so whatever
         if debug == True:
             print(k)
         if '.' in k:

@@ -14,7 +14,12 @@ if __name__ == "__main__":
 
     # The model config and model itself
     cfg = TransformerConfig(
-        d_model=64,
+        d_model=768,
+        d_vocab=1974,
+        d_head=64,
+        d_mlp=3072,
+        n_heads=12,
+        n_layers=12
     )
 
     # Traning args
@@ -22,7 +27,7 @@ if __name__ == "__main__":
         epochs=15,
         max_steps_per_epoch=500,
         debug=False,
-        )
+    )
 
     transformer = Transformer(cfg)
 

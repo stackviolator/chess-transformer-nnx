@@ -31,7 +31,7 @@ class TransformerTrainer:
         def loss_fn(model: Transformer):
             y_pred = model(batch["input_ids"])
             log_probs = self.get_log_probs(y_pred, batch["input_ids"])
-            return -log_probs.mean()
+            return -jnp.mean(log_probs)
 
         loss, grads = nnx.value_and_grad(loss_fn)(self.model)
         self.optimizer.update(grads)
@@ -39,6 +39,8 @@ class TransformerTrainer:
         self.step += 1
         if self.args.debug == False:
             wandb.log({"train_loss":loss}, step=self.step)
+        if self.args.debug:
+            print(f"Loss: {loss}")
         return loss
 
     def validation_step(self, batch: dict) -> jnp.ndarray:
@@ -72,7 +74,6 @@ class TransformerTrainer:
         if self.args.debug == False:
             wandb.finish()
 
-    # TODO write unittest for this PLEASE
     def get_log_probs(self, logits: jnp.ndarray, tokens: jnp.ndarray) -> jnp.ndarray:
         log_probs = nnx.log_softmax(logits, axis=-1)
         sliced_log_probs = log_probs[:, :-1]
@@ -81,4 +82,4 @@ class TransformerTrainer:
             sliced_log_probs, next_token_indicies, axis=-1
         )
 
-        return log_probs_for_tokens
+        return jnp.squeeze(log_probs_for_tokens, axis=-1)
