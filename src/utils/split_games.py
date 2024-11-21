@@ -11,7 +11,12 @@ def split_games(input_file, output_dir="./data/games", chunk_size_mb=50):
     # Initialize variables
     current_size = 0
     chunk_index = 1
-    output_prefix = os.path.join(output_dir, os.path.splitext(os.path.basename(input_file))[0] + "_chunk")
+
+    # Use the base name of the input file for the output prefix
+    base_name = os.path.splitext(os.path.basename(input_file))[0]
+    output_prefix = os.path.join(output_dir, f"{base_name}_chunk")
+
+    # Generate the first chunk file name
     output_file = f"{output_prefix}_{chunk_index}.pgn"
 
     # Open the first output file
@@ -65,4 +70,3 @@ if __name__ == "__main__":
 
     input_dir = sys.argv[1]
     process_directory(input_dir)
-
