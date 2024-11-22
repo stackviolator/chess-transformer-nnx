@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 import einops
+from etils import epath
 from flax import nnx
 import jax.numpy as jnp
 import jax
+import orbax.checkpoint as ocp
+import os
 from src.tokenizer.tokenizer import ChessTokenizer
 from torch.utils.data import Dataset
 
@@ -19,6 +22,44 @@ class TransformerConfig:
     ln_eps: float = 1e-5
     d_mlp: int = d_model*4
     pad_token_id: int | None = None
+    ckpt_dir: str = "trained_models/checkpoints/"
+    
+class Transformer(nnx.Module):
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.embed = Embed(self.cfg)
+        self.pos_embed = PosEmbed(self.cfg)
+        self.blocks = [TransformerBlock(self.cfg) for _ in range(cfg.n_layers)]
+        self.ln_final = LayerNorm(self.cfg)
+        self.unembed = Unembed(self.cfg)
+
+    def __call__(self, tokens: jnp.ndarray) -> jnp.ndarray:
+        resid = self.embed(tokens) + self.pos_embed(tokens)
+        for block in self.blocks:
+            resid = block(resid)
+        logits = self.unembed(self.ln_final(resid))
+        return logits
+    
+    def save(self):
+        path = epath.Path(os.getcwd() + '/' + self.cfg.ckpt_dir)
+        if path.exists(): path.rmtree()
+        print(f"Saving model to {path}/... ", end="")
+        _, state = nnx.split(self)
+
+        # NNX docs were not working, using async checkpoint
+        checkpointer = ocp.AsyncCheckpointer(ocp.StandardCheckpointHandler())
+        checkpointer.save(path, args=ocp.args.StandardSave(state))
+        checkpointer.wait_until_finished()
+        print("saved!")
+
+    def load(self, filepath):
+        path = epath.Path(os.getcwd() + '/' + self.cfg.ckpt_dir)
+        checkpointer = ocp.AsyncCheckpointer(ocp.StandardCheckpointHandler())
+        print(f"Loading model from {filepath}")
+        graphdef, abstract_state = nnx.split(self)
+
+        state_restored = checkpointer.restore(path, abstract_state)
+        return nnx.merge(graphdef, state_restored)
 
 class LayerNorm(nnx.Module):
     def __init__(self, cfg: TransformerConfig):
@@ -159,22 +200,6 @@ class Unembed(nnx.Module):
         b = d_vocab
         """
         return jnp.einsum('blm, mv -> blv', normal_resid_post, self.W_U.value) + self.b_U
-    
-class Transformer(nnx.Module):
-    def __init__(self, cfg):
-        self.cfg = cfg
-        self.embed = Embed(self.cfg)
-        self.pos_embed = PosEmbed(self.cfg)
-        self.blocks = [TransformerBlock(self.cfg) for _ in range(cfg.n_layers)]
-        self.ln_final = LayerNorm(self.cfg)
-        self.unembed = Unembed(self.cfg)
-
-    def __call__(self, tokens: jnp.ndarray) -> jnp.ndarray:
-        resid = self.embed(tokens) + self.pos_embed(tokens)
-        for block in self.blocks:
-            resid = block(resid)
-        logits = self.unembed(self.ln_final(resid))
-        return logits
     
 if __name__ == "__main__":
     cfg = TransformerConfig(

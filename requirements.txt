@@ -4,6 +4,8 @@ scikit-learn
 jax
 flax
 einops
+etils
 optax
+orbax
 wandb
 transformer_lens

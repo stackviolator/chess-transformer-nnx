@@ -27,7 +27,8 @@ if __name__ == "__main__":
         n_heads=12,
         n_layers=12,
         ctx_len=128,
-        pad_token_id=pad_token_id
+        pad_token_id=pad_token_id,
+        ckpt_dir="trained_models/dev"
     )
 
     '''
@@ -37,8 +38,8 @@ if __name__ == "__main__":
 
     # Traning args
     args = TransformerTrainingArgs(
-        epochs=15,
-        max_steps_per_epoch=500,
+        epochs=1,
+        max_steps_per_epoch=5,
         debug=False,
     )
 
@@ -58,3 +59,10 @@ if __name__ == "__main__":
     # Train the model
     trainer = TransformerTrainer(args, transformer, train_loader=train_loader, test_loader=test_loader)
     trainer.train()
+
+    # Save the model
+    transformer.save()
+
+    # Test loading the model
+    print("testing load :)...")
+    test_model = transformer.load(cfg.ckpt_dir)

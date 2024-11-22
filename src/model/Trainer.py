@@ -3,6 +3,7 @@ from flax import nnx
 import jax.numpy as jnp
 import jax
 import optax
+import orbax.checkpoint as ocp
 from src.model.Transformer import Transformer
 from tqdm import tqdm
 import wandb
@@ -51,6 +52,7 @@ class TransformerTrainer:
             wandb.log({"train_loss":loss}, step=self.step)
         if self.args.debug:
             print(f"Loss: {loss}")
+
         return loss
 
     def validation_step(self, batch: dict) -> jnp.ndarray:
@@ -75,10 +77,11 @@ class TransformerTrainer:
                     progress_bar.set_description(f"Epoch {epoch+1}, loss: {loss:.3f}, accuracy: {accuracy:.2f}")
                     if i >= self.args.max_steps_per_epoch:
                         break
-
-                correct = jnp.concat([self.validation_step(batch) for batch in self.test_loader])
-                accuracy = jnp.mean(correct)
-                if self.args.debug == False:
+                # disable  val loss for debug bc it takes a long time
+                if not self.args.debug:
+                    correct = jnp.concat([self.validation_step(batch) for batch in self.test_loader])
+                    accuracy = jnp.mean(correct)
+                if not self.args.debug:
                     wandb.log({"accuracy":accuracy}, step=self.step)
 
         if self.args.debug == False:
