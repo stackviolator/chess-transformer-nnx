@@ -18,6 +18,7 @@ def extract_moves_from_pgn(pgn_file):
     outputs = []
 
     with open(pgn_file, "r", encoding="utf-8") as file:
+        print(f"opening file {pgn_file}")
         while True:
             game = chess.pgn.read_game(file)
             if game is None:
@@ -53,6 +54,7 @@ def extract_moves_from_pgn(pgn_file):
 
                 # Add start and end tokens
                 moves_string = "<|startofgame|> " + " ".join(moves) + " <|endofgame|>"
+                print(moves_string)
 
                 # Determine if the game ended with a checkmate
                 if node.board().is_checkmate():
