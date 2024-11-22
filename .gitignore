@@ -2,6 +2,7 @@ NOTES.md
 data/
 !data/.gitkeep
 wandb/
+trained_models/
 
 # Ignore Python bytecode
 __pycache__/
