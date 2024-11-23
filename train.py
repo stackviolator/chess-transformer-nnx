@@ -58,7 +58,10 @@ if __name__ == "__main__":
 
     # Train the model
     trainer = TransformerTrainer(args, transformer, train_loader=train_loader, test_loader=test_loader)
-    trainer.train()
+    try:
+        trainer.train()
+    except:
+        print(f"Exception occured")
 
     # Save the model
     transformer.save()
