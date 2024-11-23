@@ -38,8 +38,8 @@ if __name__ == "__main__":
 
     # Traning args
     args = TransformerTrainingArgs(
-        epochs=1,
-        max_steps_per_epoch=5,
+        epochs=15,
+        max_steps_per_epoch=500,
         debug=False,
     )
 
