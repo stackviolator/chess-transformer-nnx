@@ -42,7 +42,7 @@ if __name__ == "__main__":
     model = transformer.load(cfg.ckpt_dir)
 
     board = chess.Board()
-    moves = ['<|startofgame|>', 'e4']
+    moves = ['<|startofgame|>', 'd4']
     board.push(board.parse_san(moves[-1]))
     illegal_moves = []
 

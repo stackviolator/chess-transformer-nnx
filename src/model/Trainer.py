@@ -72,11 +72,15 @@ class TransformerTrainer:
         with tqdm(total=total_steps, desc="Training Epochs") as progress_bar:
             for epoch in range(self.args.epochs):
                 for i, batch in enumerate(self.train_loader):
+                    if self.args.debug:
+                        jax.profiler.start_trace("/tmp/tensorboard")
                     loss = self.training_step(batch)
                     progress_bar.update()
                     progress_bar.set_description(f"Epoch {epoch+1}, loss: {loss:.3f}, accuracy: {accuracy:.2f}")
                     if i >= self.args.max_steps_per_epoch:
                         break
+                    if self.args.debug:
+                        jax.profiler.stop_trace()
                 # disable  val loss for debug bc it takes a long time
                 if not self.args.debug:
                     correct = jnp.concat([self.validation_step(batch) for batch in self.test_loader])
