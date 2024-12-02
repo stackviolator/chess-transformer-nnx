@@ -5,6 +5,7 @@ from src.tokenizer.tokenizer import ChessTokenizer
 from torch.utils.data import DataLoader
 import warnings
 import sys
+import traceback
 
 train_file = 'data/clean/games_data.csv'
 
@@ -62,6 +63,9 @@ if __name__ == "__main__":
         trainer.train()
     except:
         print(f"Exception occured")
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+        print(''.join('!! ' + line for line in lines))
 
     # Save the model
     transformer.save()
