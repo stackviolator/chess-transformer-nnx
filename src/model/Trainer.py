@@ -30,8 +30,6 @@ class TransformerTrainer:
         self.test_loader = test_loader
 
     def training_step(self, batch: dict) -> jnp.ndarray:
-        if self.args.debug:
-            print("i am in debug lol")
         def loss_fn(model: Transformer):
             y_pred = model(batch["input_ids"])
             # One hot encode the labels
