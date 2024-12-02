@@ -1,3 +1,4 @@
+import chess
 import flax.nnx as nnx
 import jax.numpy as jnp
 from src.model.Transformer import Transformer, TransformerConfig
@@ -40,12 +41,34 @@ if __name__ == "__main__":
     print(f"Loading model at {cfg.ckpt_dir} ...")
     model = transformer.load(cfg.ckpt_dir)
 
+    board = chess.Board()
     moves = ['<|startofgame|>', 'e4']
+    board.push(board.parse_san(moves[-1]))
+    illegal_moves = []
 
-    for i in range(20):
+    while True:
+        if len(moves) > cfg.ctx_len:
+            break
         tokens = tokenizer.encode(moves)
         tokens = jnp.expand_dims(tokens, 0)
         logits = model(tokens)
-        top_pred = sampler.greedy(logits)
-        moves.append(tokenizer.decode(top_pred)[0])
-        print(moves[-1])
+        top_pred = sampler.greedy(logits, illegal_moves)
+        move_san = tokenizer.decode(top_pred)[0]
+        if move_san == "<|endofgame|>":
+            break
+        try:
+            move = board.parse_san(move_san)
+            moves.append(move_san)
+            board.push(move)
+            print(moves)
+            illegal_moves = []
+        except chess.IllegalMoveError:
+            print(f"Illegal move {move_san} retrying")
+            illegal_moves.append(tokenizer.encode([move_san]))
+        except chess.AmbiguousMoveError:
+            print(f"Ambiguous move {move_san} retrying")
+            illegal_moves.append(tokenizer.encode([move_san]))
+
+    print(moves)
+
+print(" ".join(m for m in moves[1:]))
