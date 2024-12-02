@@ -41,7 +41,7 @@ if __name__ == "__main__":
     args = TransformerTrainingArgs(
         epochs=15,
         max_steps_per_epoch=500,
-        debug=False,
+        debug=True,
     )
 
     transformer = Transformer(cfg)

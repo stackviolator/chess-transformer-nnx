@@ -9,3 +9,5 @@ optax
 orbax
 wandb
 transformer_lens
+tensorflow
+tensorboard-plugin-profile
