@@ -127,18 +127,18 @@ class Attention(nnx.Module):
         k = k_pos
         """
         # normal_pre_resid: [batch length d_model]
-        q = nnx.einsum('blm, nmh -> blnh', normal_pre_resid, self.W_Q.value) + self.b_Q
-        k = nnx.einsum('blm, nmh -> blnh', normal_pre_resid, self.W_K.value) + self.b_K
-        v = nnx.einsum('blm, nmh -> blnh', normal_pre_resid, self.W_V.value) + self.b_V
+        q = jnp.einsum('blm, nmh -> blnh', normal_pre_resid, self.W_Q.value) + self.b_Q
+        k = jnp.einsum('blm, nmh -> blnh', normal_pre_resid, self.W_K.value) + self.b_K
+        v = jnp.einsum('blm, nmh -> blnh', normal_pre_resid, self.W_V.value) + self.b_V
 
-        attn_scores = nnx.einsum('bqnh, bknh -> bnqk', q, k)
+        attn_scores = jnp.einsum('bqnh, bknh -> bnqk', q, k)
         attn_scores = self.apply_casual_mask(attn_scores / self.cfg.d_head ** 0.5)
         attn_probs = jax.nn.softmax(attn_scores, axis=-1) # [batch x n_heads x q_pos x k_pos]
 
         # [batch x q_pos x n_heads x d_head]
-        z = nnx.einsum('bknh, bnqk -> bqnh', v, attn_probs)
+        z = jnp.einsum('bknh, bnqk -> bqnh', v, attn_probs)
 
-        out = nnx.einsum('bqnh, nhm -> bqm', z, self.W_O.value) + self.b_O
+        out = jnp.einsum('bqnh, nhm -> bqm', z, self.W_O.value) + self.b_O
         return out
 
     def apply_casual_mask(self, attn_scores: jnp.ndarray) -> jnp.ndarray:
@@ -166,9 +166,9 @@ class MLP(nnx.Module):
         m = d_model
         p = d_mlp
         """
-        out = nnx.einsum('blm, mp -> blp', normal_resid_mid, self.W_in.value) + self.b_in
+        out = jnp.einsum('blm, mp -> blp', normal_resid_mid, self.W_in.value) + self.b_in
         out = nnx.gelu(out)
-        out = nnx.einsum('blp, pm -> blm', out, self.W_out.value) + self.b_out
+        out = jnp.einsum('blp, pm -> blm', out, self.W_out.value) + self.b_out
         return out
 
 class TransformerBlock(nnx.Module):
@@ -199,7 +199,7 @@ class Unembed(nnx.Module):
         m = d_model
         b = d_vocab
         """
-        return nnx.einsum('blm, mv -> blv', normal_resid_post, self.W_U.value) + self.b_U
+        return jnp.einsum('blm, mv -> blv', normal_resid_post, self.W_U.value) + self.b_U
     
 if __name__ == "__main__":
     cfg = TransformerConfig(
