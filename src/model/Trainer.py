@@ -30,8 +30,6 @@ class TransformerTrainer:
         self.test_loader = test_loader
 
     def training_step(self, batch: dict) -> jnp.ndarray:
-        if self.args.debug:
-            jax.profiler.start_trace('/tmp/tensorboard')
         def loss_fn(model: Transformer):
             y_pred = model(batch["input_ids"])
             # One hot encode the labels
@@ -52,10 +50,6 @@ class TransformerTrainer:
             wandb.log({"train_loss":loss}, step=self.step)
         if self.args.debug:
             print(f"Loss: {loss}")
-
-        if self.args.debug:
-            jax.profiler.stop_trace()
-
         return loss
 
     def validation_step(self, batch: dict) -> jnp.ndarray:
@@ -76,6 +70,8 @@ class TransformerTrainer:
             for epoch in range(self.args.epochs):
                 for i, batch in enumerate(self.train_loader):
                     loss = self.training_step(batch)
+                    if self.args.debug:
+                        jax.profiler.save_device_memory_profile(f"/tmp/memory{i}.prof")
                     progress_bar.update()
                     progress_bar.set_description(f"Epoch {epoch+1}, loss: {loss:.3f}, accuracy: {accuracy:.2f}")
                     if i >= self.args.max_steps_per_epoch:
