@@ -200,22 +200,3 @@ class Unembed(nnx.Module):
         b = d_vocab
         """
         return jnp.einsum('blm, mv -> blv', normal_resid_post, self.W_U.value) + self.b_U
-    
-if __name__ == "__main__":
-    cfg = TransformerConfig(
-        d_model=64,
-    )
-
-    tokenizer = ChessTokenizer()
-    tokenizer.load_tokenizer("src/tokenizer/vocab.json")
-
-    # test_game = ["<|startofgame|>", "d4", "e6", "Bf4", "d5", "e3", "Nf6", "Nc3", "Bd6", "Bg3", "Bxg3", "hxg3", "c5", "Qd3", "cxd4", "exd4", "Nc6", "g4", "g6", "g5", "Ne4", "Nxe4", "dxe4", "Qxe4", "f5", "Qh4", "Rf7", "Ne5", "Nxe5", "dxe5", "Qa5+", "c3", "Qxe5+", "Kd2", "b6", "Re1", "Qa5", "a3", "Ba6", "Bxa6", "Qxa6", "Qd4", "Rff8", "Kc2", "Qb5", "Rxe6", "Rad8", "Qe3", "Qa4+", "Kb1", "Rd1+", "Rxd1", "Qxd1+", "Ka2", "Qd8", "Re7", "Qd5+", "b3", "Rf7", "Re8+", "Kg7", "Kb2", "Rd7", "Re7+", "Rxe7", "Qxe7+", "Kg8", "Qe8+", "Kg7", "Qe7+", "Kg8", "Qxa7", "Qd2+", "Kb1", "Qxg5", "Qb8+", "Kg7", "a4", "Qg4", "Qxb6", "Qxg2", "Qe3", "Qf1+", "Kb2", "Qg2", "Qd4+", "Kh6", "a5", "f4", "Qxf4+", "g5", "Qd4", "Qf3", "a6", "Qf7", "a7", "Qe7", "b4", "Qe2+", "Kb3", "Qe7", "Qc5", "Qe6+", "Qc4", "Qe3", "Qc5", "Qe1", "a8=Q", "Qb1+", "Kc4", "Qa1", "Qcc6+", "<|endofgame|>"]
-    test_game = ["<|startofgame|>", "d4", "e6", "Bf4", "d5", "e3", "Nf6", "Nc3", "Bd6", "Bg3", "Bxg3"]
-    input_ids = tokenizer.encode_and_pad(test_game, cfg.ctx_len)
-    batched_input_ids = jnp.expand_dims(input_ids, 0)
-
-    transformer = Transformer(cfg)
-    logits = transformer(batched_input_ids)
-
-    greedy_pred = jax.nn.softmax(logits[0,-1], axis=-1).argmax()
-    print(f"Next predicted move is: {tokenizer.decode([greedy_pred])[0]}")
