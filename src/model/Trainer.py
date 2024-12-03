@@ -43,11 +43,13 @@ class TransformerTrainer:
         
         grad_fn = nnx.value_and_grad(loss_fn)
         loss, grads = grad_fn(model, batch)
+
+        loss = jax.block_until_ready(loss)
         optimizer.update(grads)
 
         self.step += 1
         if self.args.debug == False:
-            wandb.log({"train_loss":loss}, step=self.step)
+            wandb.log({"train_loss":float(loss)}, step=self.step)
         if self.args.debug:
             print(f"Loss: {loss}")
         return loss
@@ -70,17 +72,21 @@ class TransformerTrainer:
             for epoch in range(self.args.epochs):
                 for i, batch in enumerate(self.train_loader):
                     loss = self.training_step(model, self.optimizer, batch)
-                    if self.args.debug:
+                    if self.args.debug and self.step % 100 == 0:
                         print(f"{i} steps")
                         jax.profiler.save_device_memory_profile(f"/tmp/memory{i}.prof")
                     progress_bar.update()
                     progress_bar.set_description(f"Epoch {epoch+1}, loss: {loss:.3f}, accuracy: {accuracy:.2f}")
                     if i >= self.args.max_steps_per_epoch:
                         break
-                correct = jnp.concat([self.validation_step(model, batch) for batch in self.test_loader])
-                accuracy = jnp.mean(correct)
+                correct_sum = 0
+                total_count = 0
+                for batch in self.test_loader:
+                    correct_sum += jnp.sum(self.validation_step(model, batch))
+                    total_count += jnp.size(batch["input_ids"]) - 1
+                accuracy = correct_sum / total_count
                 if not self.args.debug:
-                    wandb.log({"accuracy":accuracy}, step=self.step)
+                    wandb.log({"accuracy":float(accuracy)}, step=self.step)
 
         if self.args.debug == False:
             wandb.finish()
