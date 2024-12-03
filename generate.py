@@ -19,7 +19,8 @@ if __name__ == "__main__":
 
     pad_token_id = int(tokenizer.encode(["[PAD]"])[0])
 
-    cfg = TransformerConfig.from_yaml('configs/dev.cfg')
+    cfg = TransformerConfig.from_yaml('configs/transformer_dev.cfg')
+    cfg.d_vocab = len(tokenizer.tokens.values())
 
     transformer = Transformer(cfg)
 

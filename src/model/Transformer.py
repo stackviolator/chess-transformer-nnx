@@ -67,9 +67,6 @@ class Transformer(nnx.Module):
         checkpointer = ocp.AsyncCheckpointer(ocp.StandardCheckpointHandler())
         print(f"Loading model from {filepath}")
         graphdef, abstract_state = nnx.split(self)
-
-        nnx.display(graphdef)
-
         state_restored = checkpointer.restore(path, abstract_state)
         return nnx.merge(graphdef, state_restored)
 

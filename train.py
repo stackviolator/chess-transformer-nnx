@@ -31,7 +31,7 @@ class TransformerTrainingArgs():
         with open(filepath, 'r') as f:
             data = yaml.safe_load(f)
         config_data = data.get('training', {})
-        return TransformerConfig(**config_data)
+        return TransformerTrainingArgs(**config_data)
 
 @nnx.jit
 def training_step(model, optimizer: nnx.Optimizer, batch: dict) -> jnp.ndarray:
@@ -107,6 +107,10 @@ if __name__ == "__main__":
 
     cfg = TransformerConfig.from_yaml('configs/dev.cfg')
     args = TransformerTrainingArgs.from_yaml('configs/training_args_debug.cfg')
+
+    print(cfg)
+    print(args)
+    import sys; sys.exit(0)
 
     model = Transformer(cfg)
 
