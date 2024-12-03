@@ -1,13 +1,89 @@
-from src.dataset.GamesDataset import GamesDataset
-from src.model.Trainer import TransformerTrainingArgs, TransformerTrainer
+from dataclasses import dataclass
+from flax import nnx
+import jax.numpy as jnp
+import jax
+import optax
+import orbax.checkpoint as ocp
 from src.model.Transformer import Transformer, TransformerConfig
 from src.tokenizer.tokenizer import ChessTokenizer
+from src.dataset.GamesDataset import GamesDataset
 from torch.utils.data import DataLoader
+from tqdm import tqdm
+import wandb
 import warnings
-import sys
-import traceback
 
-train_file = 'data/clean/games_data.csv'
+@dataclass
+class TransformerTrainingArgs():
+    batch_size = 16
+    epochs: int = 10
+    max_steps_per_epoch: int = 200
+    lr = 1e-3
+    weight_decay = 1e-2
+    wandb_project: str | None = "ChessTransformer"
+    wandb_name: str | None = None
+    debug: bool = False
+
+@nnx.jit
+def training_step(model, optimizer: nnx.Optimizer, batch: dict) -> jnp.ndarray:
+    def loss_fn(model: Transformer, batch: dict):
+        y_pred = model(batch["input_ids"])
+        # One hot encode the labels
+        labels = jax.nn.one_hot(batch["labels"], model.cfg.d_vocab)
+        # Create mask -- masks losing player's moves and pad tokens
+        pad_mask = batch["move_mask"] != model.cfg.pad_token_id
+        mask = batch["move_mask"] & pad_mask
+
+        log_probs = optax.softmax_cross_entropy(logits=y_pred, labels=labels)
+        masked_log_probs = jnp.where(mask, log_probs, 0.0)
+        return jnp.sum(masked_log_probs) / jnp.sum(mask)
+    
+    grad_fn = nnx.value_and_grad(loss_fn)
+    loss, grads = grad_fn(model, batch)
+
+    loss = jax.block_until_ready(loss)
+    optimizer.update(grads)
+    return loss
+
+@nnx.jit
+def validation_step(model, batch: dict) -> jnp.ndarray:
+    tokens = batch["input_ids"]
+    logits = model(tokens)[:,:-1]
+    pred_tokens = jnp.argmax(logits, axis=-1)
+    correct = (pred_tokens == tokens[:, 1:]).flatten()
+
+    return correct
+
+def train(model, optimizer):
+    if args.debug == False:
+        wandb.init(project=args.wandb_project, name=args.wandb_name, config=args)
+    accuracy = jnp.nan
+    total_steps = args.epochs * args.max_steps_per_epoch
+    step = 0
+
+    with tqdm(total=total_steps, desc="Training Epochs") as progress_bar:
+        for epoch in range(args.epochs):
+            for i, batch in enumerate(train_loader):
+                loss = training_step(model, optimizer, batch)
+                if not args.debug:
+                    wandb.log({"train_loss":float(loss)}, step=step)
+                if args.debug and step % 100 == 0:
+                    print(f"{i} steps")
+                    jax.profiler.save_device_memory_profile(f"/tmp/memory{i}.prof")
+                progress_bar.update()
+                progress_bar.set_description(f"Epoch {epoch+1}, loss: {loss:.3f}, accuracy: {accuracy:.2f}")
+                if i >= args.max_steps_per_epoch:
+                    break
+            correct_sum = 0
+            total_count = 0
+            for batch in test_loader:
+                correct_sum += jnp.sum(validation_step(model, batch))
+                total_count += jnp.size(batch["input_ids"]) - 1
+            accuracy = correct_sum / total_count
+            if not args.debug:
+                wandb.log({"accuracy":float(accuracy)}, step=step)
+
+    if args.debug == False:
+        wandb.finish()
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore", category=FutureWarning)
@@ -32,21 +108,16 @@ if __name__ == "__main__":
         ckpt_dir="trained_models/dev"
     )
 
-    '''
-    Note on ctx_len:
-    this will prob need to be played with. since there is a bunch of padding.. however this might not be a big deal if i implement masked loss
-    '''
-
-    # Traning args
     args = TransformerTrainingArgs(
         epochs=15,
         max_steps_per_epoch=500,
         debug=True,
     )
 
-    transformer = Transformer(cfg)
+    model = Transformer(cfg)
 
     # Dataset and loaders
+    train_file = 'data/clean/games_data.csv'
     dataset = GamesDataset(train_file, tokenizer, context_length=cfg.ctx_len)
     dataset_dict = dataset.train_test_split(test_size=1000)
 
@@ -56,22 +127,13 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=True, collate_fn=GamesDataset.collate_fn)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=True, collate_fn=GamesDataset.collate_fn)
 
+    optimizer = nnx.Optimizer(model, optax.adamw(learning_rate=args.lr, weight_decay=args.weight_decay))
 
-    # Train the model
-    trainer = TransformerTrainer(args, transformer, train_loader=train_loader, test_loader=test_loader)
-    try:
-        trainer.train(transformer)
-    except Exception as e:
-        print(f"An exception occurred: {e}")
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        formatted_traceback = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-        print("\nTraceback (most recent call last):")
-        print(formatted_traceback)
-
+    train(model, optimizer)
 
     # Save the model
-    transformer.save()
+    model.save()
 
     # Test loading the model
     print("testing load :)...")
-    test_model = transformer.load(cfg.ckpt_dir)
+    test_model = model.load(cfg.ckpt_dir)
