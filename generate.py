@@ -17,8 +17,6 @@ if __name__ == "__main__":
     tokenizer = ChessTokenizer()
     tokenizer.load_tokenizer("src/tokenizer/vocab.json")
 
-    sampler = ChessSampler()
-
     pad_token_id = int(tokenizer.encode(["[PAD]"])[0])
 
     # The model config and model itself
@@ -46,28 +44,44 @@ if __name__ == "__main__":
     board.push(board.parse_san(moves[-1]))
     illegal_moves = []
 
+    sampler = ChessSampler()
+
+    frequency_penalty = 1.0
+    illegal_moves = []
+
     while True:
+        print(f"freq pen: {frequency_penalty}")
         if len(moves) > cfg.ctx_len:
             break
+        if len(illegal_moves) > cfg.ctx_len:
+            print("Can't find good move")
+            break
         tokens = tokenizer.encode(moves)
+        if len(illegal_moves) > 0:
+            illegal_tokens = tokenizer.encode(illegal_moves)
+            tokens = jnp.concat([tokens, illegal_tokens])
         tokens = jnp.expand_dims(tokens, 0)
         logits = model(tokens)
-        top_pred = sampler.greedy(logits, illegal_moves)
-        move_san = tokenizer.decode(top_pred)[0]
+        pred = sampler.sample(tokens, logits, top_k=5, frequency_penalty=frequency_penalty)
+        move_san = tokenizer.decode(pred)[0]
         if move_san == "<|endofgame|>":
             break
         try:
             move = board.parse_san(move_san)
             moves.append(move_san)
             board.push(move)
-            print(moves)
+            frequency_penalty = 1.0
             illegal_moves = []
+            print(f"moves: {moves}")
         except chess.IllegalMoveError:
             print(f"Illegal move {move_san} retrying")
-            illegal_moves.append(tokenizer.encode([move_san]))
+            illegal_moves.append(move_san)
+            frequency_penalty += len(illegal_moves)
+            print(f"illegal_moves: {illegal_moves}")
         except chess.AmbiguousMoveError:
             print(f"Ambiguous move {move_san} retrying")
-            illegal_moves.append(tokenizer.encode([move_san]))
+            illegal_moves.append(move_san)
+            frequency_penalty += len(illegal_moves)
 
     print(moves)
 

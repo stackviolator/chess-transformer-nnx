@@ -7,7 +7,9 @@ import orbax.checkpoint as ocp
 from src.model.Transformer import Transformer, TransformerConfig
 from src.tokenizer.tokenizer import ChessTokenizer
 from src.dataset.GamesDataset import GamesDataset
+import sys
 from torch.utils.data import DataLoader
+import traceback
 from tqdm import tqdm
 import wandb
 import warnings
@@ -129,7 +131,15 @@ if __name__ == "__main__":
 
     optimizer = nnx.Optimizer(model, optax.adamw(learning_rate=args.lr, weight_decay=args.weight_decay))
 
-    train(model, optimizer)
+    try:
+        train(model, optimizer)
+
+    except Exception as e:
+        print(f"An exception occurred: {e}")
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        formatted_traceback = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+        print("\nTraceback (most recent call last):")
+        print(formatted_traceback)
 
     # Save the model
     model.save()
