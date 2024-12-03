@@ -66,7 +66,7 @@ def train(model, optimizer):
                 loss = training_step(model, optimizer, batch)
                 if not args.debug:
                     wandb.log({"train_loss":float(loss)}, step=step)
-                if args.debug and step % 100 == 0:
+                if args.debug and (step % 100 == 0):
                     print(f"{i} steps")
                     jax.profiler.save_device_memory_profile(f"/tmp/memory{i}.prof")
                 progress_bar.update()
