@@ -31,7 +31,6 @@ class TransformerTrainingArgs():
         with open(filepath, 'r') as f:
             data = yaml.safe_load(f)
         config_data = data.get('training_args', {})
-        print(config_data)
         return TransformerTrainingArgs(**config_data)
 
 @nnx.jit
