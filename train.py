@@ -13,6 +13,7 @@ import traceback
 from tqdm import tqdm
 import wandb
 import warnings
+import yaml
 
 @dataclass
 class TransformerTrainingArgs():
@@ -24,6 +25,13 @@ class TransformerTrainingArgs():
     wandb_project: str | None = "ChessTransformer"
     wandb_name: str | None = None
     debug: bool = False
+
+    @staticmethod
+    def from_yaml(filepath: str):
+        with open(filepath, 'r') as f:
+            data = yaml.safe_load(f)
+        config_data = data.get('training', {})
+        return TransformerConfig(**config_data)
 
 @nnx.jit
 def training_step(model, optimizer: nnx.Optimizer, batch: dict) -> jnp.ndarray:
@@ -72,7 +80,7 @@ def train(model, optimizer):
                     print(f"{i} steps")
                     jax.profiler.save_device_memory_profile(f"/tmp/memory{i}.prof")
                 progress_bar.update()
-                progress_bar.set_description(f"Epoch {epoch+1}, loss: {loss:.3f}, accuracy: {accuracy:.2f}")
+                progress_bar.set_description(f"Epoch {epoch+1}, loss: {float(loss):.3f}, accuracy: {float(accuracy):.2f}")
                 if i >= args.max_steps_per_epoch:
                     break
             correct_sum = 0
@@ -97,24 +105,12 @@ if __name__ == "__main__":
 
     pad_token_id = int(tokenizer.encode(["[PAD]"])[0])
 
-    # The model config and model itself
-    cfg = TransformerConfig(
-        d_model=768,
-        d_vocab=len(tokenizer.tokens.values()),
-        d_head=64,
-        d_mlp=3072,
-        n_heads=12,
-        n_layers=12,
-        ctx_len=128,
-        pad_token_id=pad_token_id,
-        ckpt_dir="trained_models/dev"
-    )
+    cfg = TransformerConfig.from_yaml('configs/dev.cfg')
 
-    args = TransformerTrainingArgs(
-        epochs=15,
-        max_steps_per_epoch=500,
-        debug=True,
-    )
+    args = TransformerTrainingArgs.from_yaml('configs/training_args_debug.cfg')
+    print(args)
+
+    import sys; sys.exit(0)
 
     model = Transformer(cfg)
 

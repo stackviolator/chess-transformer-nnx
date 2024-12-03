@@ -19,18 +19,7 @@ if __name__ == "__main__":
 
     pad_token_id = int(tokenizer.encode(["[PAD]"])[0])
 
-    # The model config and model itself
-    cfg = TransformerConfig(
-        d_model=768,
-        d_vocab=len(tokenizer.tokens.values()),
-        d_head=64,
-        d_mlp=3072,
-        n_heads=12,
-        n_layers=12,
-        ctx_len=128,
-        pad_token_id=pad_token_id,
-        ckpt_dir="trained_models/dev"
-    )
+    cfg = TransformerConfig.from_yaml('configs/dev.cfg')
 
     transformer = Transformer(cfg)
 
@@ -50,7 +39,6 @@ if __name__ == "__main__":
     illegal_moves = []
 
     while True:
-        print(f"freq pen: {frequency_penalty}")
         if len(moves) > cfg.ctx_len:
             break
         if len(illegal_moves) > cfg.ctx_len:
@@ -77,7 +65,6 @@ if __name__ == "__main__":
             print(f"Illegal move {move_san} retrying")
             illegal_moves.append(move_san)
             frequency_penalty += len(illegal_moves)
-            print(f"illegal_moves: {illegal_moves}")
         except chess.AmbiguousMoveError:
             print(f"Ambiguous move {move_san} retrying")
             illegal_moves.append(move_san)

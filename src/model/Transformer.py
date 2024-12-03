@@ -8,6 +8,7 @@ import orbax.checkpoint as ocp
 import os
 from src.tokenizer.tokenizer import ChessTokenizer
 from torch.utils.data import Dataset
+import yaml
 
 @dataclass
 class TransformerConfig:
@@ -23,6 +24,15 @@ class TransformerConfig:
     d_mlp: int = d_model*4
     pad_token_id: int | None = None
     ckpt_dir: str = "trained_models/checkpoints/"
+
+    @staticmethod
+    def from_yaml(filepath: str):
+        with open(filepath, 'r') as f:
+            data = yaml.safe_load(f)
+        config_data = data.get('transformer', {})
+        if 'ln_eps' in config_data and not isinstance(config_data['ln_eps'], float):
+            config_data['ln_eps'] = float(config_data['ln_eps'])
+        return TransformerConfig(**config_data)
     
 class Transformer(nnx.Module):
     def __init__(self, cfg):
