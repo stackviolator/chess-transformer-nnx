@@ -108,10 +108,6 @@ if __name__ == "__main__":
     cfg = TransformerConfig.from_yaml('configs/dev.cfg')
     args = TransformerTrainingArgs.from_yaml('configs/training_args_debug.cfg')
 
-    print(cfg)
-    print(args)
-    import sys; sys.exit(0)
-
     model = Transformer(cfg)
 
     # Dataset and loaders

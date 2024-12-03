@@ -42,7 +42,7 @@ if __name__ == "__main__":
     while True:
         if len(moves) > cfg.ctx_len:
             break
-        if len(illegal_moves) > cfg.ctx_len:
+        if len(illegal_moves) + len(moves) > cfg.ctx_len:
             print("Can't find good move")
             break
         tokens = tokenizer.encode(moves)
