@@ -3,6 +3,7 @@ data/
 !data/.gitkeep
 wandb/
 trained_models/
+configs/
 
 # Ignore Python bytecode
 __pycache__/
