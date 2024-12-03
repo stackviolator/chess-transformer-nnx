@@ -60,12 +60,14 @@ if __name__ == "__main__":
     # Train the model
     trainer = TransformerTrainer(args, transformer, train_loader=train_loader, test_loader=test_loader)
     try:
-        trainer.train()
-    except:
-        print(f"Exception occured")
+        trainer.train(transformer)
+    except Exception as e:
+        print(f"An exception occurred: {e}")
         exc_type, exc_value, exc_traceback = sys.exc_info()
-        lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-        print(''.join('!! ' + line for line in lines))
+        formatted_traceback = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+        print("\nTraceback (most recent call last):")
+        print(formatted_traceback)
+
 
     # Save the model
     transformer.save()
