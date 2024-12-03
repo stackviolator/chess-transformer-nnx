@@ -17,11 +17,11 @@ import yaml
 
 @dataclass
 class TransformerTrainingArgs():
-    batch_size = 16
+    batch_size: int = 16
     epochs: int = 10
     max_steps_per_epoch: int = 200
-    lr = 1e-3
-    weight_decay = 1e-2
+    lr: float = 1e-3
+    weight_decay: float = 1e-2
     wandb_project: str | None = "ChessTransformer"
     wandb_name: str | None = None
     debug: bool = False
@@ -30,7 +30,8 @@ class TransformerTrainingArgs():
     def from_yaml(filepath: str):
         with open(filepath, 'r') as f:
             data = yaml.safe_load(f)
-        config_data = data.get('training', {})
+        config_data = data.get('training_args', {})
+        print(config_data)
         return TransformerTrainingArgs(**config_data)
 
 @nnx.jit
@@ -76,9 +77,6 @@ def train(model, optimizer):
                 loss = training_step(model, optimizer, batch)
                 if not args.debug:
                     wandb.log({"train_loss":float(loss)}, step=step)
-                if args.debug and (step % 100 == 0):
-                    print(f"{i} steps")
-                    jax.profiler.save_device_memory_profile(f"/tmp/memory{i}.prof")
                 progress_bar.update()
                 progress_bar.set_description(f"Epoch {epoch+1}, loss: {float(loss):.3f}, accuracy: {float(accuracy):.2f}")
                 if i >= args.max_steps_per_epoch:
@@ -106,6 +104,7 @@ if __name__ == "__main__":
     pad_token_id = int(tokenizer.encode(["[PAD]"])[0])
 
     cfg = TransformerConfig.from_yaml('configs/transformer_dev.cfg')
+    cfg.d_vocab = len(tokenizer.tokens.values())
     args = TransformerTrainingArgs.from_yaml('configs/training_args.cfg')
 
     model = Transformer(cfg)

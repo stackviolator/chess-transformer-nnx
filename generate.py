@@ -6,10 +6,6 @@ from src.tokenizer.tokenizer import ChessTokenizer
 from src.sampler.Sampler import ChessSampler
 import warnings
 
-test_game = """
-<|startofgame|> e4 c5 Nf3 Nc6 d4 cxd4 Nxd4 e6 Nb3 d6 Nc3 Nf6 Be3 Be7 f3 O-O Qd2 a6 O-O-O b5 g4 Bb7 h4 Na5 h5 Nxb3+ axb3 d5 exd5 exd5 Bd4 b4 Ne2 Nd7 Ng3 Bf6 Nf5 Bxd4 Qxd4 Nb6 Qxg7# <|endofgame|>
-"""
-
 if __name__ == "__main__":
     warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -30,7 +26,7 @@ if __name__ == "__main__":
     model = transformer.load(cfg.ckpt_dir)
 
     board = chess.Board()
-    moves = ['<|startofgame|>', 'd4']
+    moves = ['<|startofgame|>', 'e4']
     board.push(board.parse_san(moves[-1]))
     illegal_moves = []
 
@@ -39,38 +35,61 @@ if __name__ == "__main__":
     frequency_penalty = 1.0
     illegal_moves = []
 
+    tokens = tokenizer.encode(moves)
+
     while True:
-        if len(moves) > cfg.ctx_len:
+        # Break if token length exceeds context length
+        if len(tokens) > cfg.ctx_len:
+            print("Context length exceeded, exiting.")
             break
+        
+        # Check combined length of moves and illegal moves
         if len(illegal_moves) + len(moves) > cfg.ctx_len:
-            print("Can't find good move")
+            print("Can't find a good move, exiting.")
             break
-        tokens = tokenizer.encode(moves)
-        if len(illegal_moves) > 0:
+
+        # Handle illegal moves
+        if illegal_moves:
             illegal_tokens = tokenizer.encode(illegal_moves)
-            tokens = jnp.concat([tokens, illegal_tokens])
-        tokens = jnp.expand_dims(tokens, 0)
-        logits = model(tokens)
-        pred = sampler.sample(tokens, logits, top_k=5, frequency_penalty=frequency_penalty)
+            input_ids = jnp.concatenate([tokens, illegal_tokens])
+        else:
+            input_ids = tokens  # If no illegal moves, use tokens as is
+
+        input_ids = jnp.expand_dims(input_ids, 0)
+
+        # Generate logits and sample next move
+        logits = model(input_ids)
+        pred = sampler.sample(input_ids, logits, top_k=5, frequency_penalty=frequency_penalty)
+        # pred = sampler.sample(input_ids, logits, frequency_penalty=frequency_penalty, temperature=0.0)
+        pred = jnp.array(pred)
         move_san = tokenizer.decode(pred)[0]
+
+        # End game condition
         if move_san == "<|endofgame|>":
+            print("End of game detected.")
             break
+
         try:
+            # Try to parse and apply the move
             move = board.parse_san(move_san)
-            moves.append(move_san)
             board.push(move)
+            moves.append(move_san)
+            tokens = jnp.concatenate([tokens, pred])
+            print(f"Tokens: {tokens}")
+            print(f"Moves: {moves}")
+
+            # Reset penalties and illegal moves
             frequency_penalty = 1.0
             illegal_moves = []
-            print(f"moves: {moves}")
         except chess.IllegalMoveError:
-            print(f"Illegal move {move_san} retrying")
+            print(f"Illegal move: {move_san}. Retrying...")
             illegal_moves.append(move_san)
             frequency_penalty += len(illegal_moves)
         except chess.AmbiguousMoveError:
-            print(f"Ambiguous move {move_san} retrying")
+            print(f"Ambiguous move: {move_san}. Retrying...")
             illegal_moves.append(move_san)
             frequency_penalty += len(illegal_moves)
 
-    print(moves)
-
-print(" ".join(m for m in moves[1:]))
+    # Output final moves
+    print("Final moves:", moves)
+    print("Move sequence:", " ".join(m for m in moves))
