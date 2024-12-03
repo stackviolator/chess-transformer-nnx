@@ -71,6 +71,7 @@ class TransformerTrainer:
                 for i, batch in enumerate(self.train_loader):
                     loss = self.training_step(model, self.optimizer, batch)
                     if self.args.debug:
+                        print(f"{i} steps")
                         jax.profiler.save_device_memory_profile(f"/tmp/memory{i}.prof")
                     progress_bar.update()
                     progress_bar.set_description(f"Epoch {epoch+1}, loss: {loss:.3f}, accuracy: {accuracy:.2f}")
