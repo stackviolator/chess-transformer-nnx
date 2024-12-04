@@ -75,9 +75,10 @@ def train(model, optimizer):
             for i, batch in enumerate(train_loader):
                 loss = training_step(model, optimizer, batch)
                 if not args.debug:
-                    wandb.log({"train_loss":float(loss)}, step=step)
+                    wandb.log({"train_loss":loss}, step=step)
                 progress_bar.update()
-                progress_bar.set_description(f"Epoch {epoch+1}, loss: {float(loss):.3f}, accuracy: {float(accuracy):.2f}")
+                progress_bar.set_description(f"Epoch {epoch+1}, loss: {loss:.3f}, accuracy: {accuracy:.2f}")
+                step += 1
                 if i >= args.max_steps_per_epoch:
                     break
             correct_sum = 0
@@ -87,7 +88,7 @@ def train(model, optimizer):
                 total_count += jnp.size(batch["input_ids"]) - 1
             accuracy = correct_sum / total_count
             if not args.debug:
-                wandb.log({"accuracy":float(accuracy)}, step=step)
+                wandb.log({"accuracy":accuracy}, step=step)
 
     if args.debug == False:
         wandb.finish()
@@ -98,7 +99,6 @@ if __name__ == "__main__":
     # Tokenizer
     tokenizer = ChessTokenizer()
     tokenizer.load_tokenizer("src/tokenizer/vocab.json")
-
 
     pad_token_id = int(tokenizer.encode(["[PAD]"])[0])
 
