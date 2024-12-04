@@ -66,7 +66,7 @@ class Transformer(nnx.Module):
         ckpt_dir = f"{os.getcwd()}/{self.cfg.ckpt_dir}_checkpoint"
         path = epath.Path(ckpt_dir)
         if path.exists(): path.rmtree()
-        print(f"Saving model to {self.cfg.ckpt_dir}_checkpoint...")
+        print(f"\nSaving model to {self.cfg.ckpt_dir}_checkpoint...")
         _, state = nnx.split(self)
         checkpointer = ocp.AsyncCheckpointer(ocp.StandardCheckpointHandler())
         checkpointer.save(path, args=ocp.args.StandardSave(state))

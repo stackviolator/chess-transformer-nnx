@@ -48,25 +48,25 @@ if __name__ == "__main__":
             print("Can't find a good move, exiting.")
             break
 
-        # Handle illegal moves
-        if illegal_moves:
-            illegal_tokens = tokenizer.encode(illegal_moves)
-            input_ids = jnp.concatenate([tokens, illegal_tokens])
-        else:
-            input_ids = tokens  # If no illegal moves, use tokens as is
-
-        input_ids = jnp.expand_dims(input_ids, 0)
+        # Add empty batch dim for the model
+        if len(tokens.shape) == 1:
+            tokens = jnp.expand_dims(tokens, 0)
 
         # Generate logits and sample next move
-        logits = model(input_ids)
-        pred = sampler.sample(input_ids, logits, top_k=5, frequency_penalty=frequency_penalty)
-        # pred = sampler.sample(input_ids, logits, frequency_penalty=frequency_penalty, temperature=0.0)
+        logits = model(tokens)
+        # pred, pred_tokens = sampler.sample(tokens, logits, tokenizer.encode(illegal_moves), temperature=0.0, frequency_penalty=frequency_penalty)
+        # pred, pred_tokens = sampler.sample(tokens, logits, tokenizer.encode(illegal_moves), top_k=5, frequency_penalty=frequency_penalty)
+        pred, pred_tokens = sampler.sample(tokens, logits, tokenizer.encode(illegal_moves), top_p=.75, frequency_penalty=frequency_penalty)
+        print(f"Sampled tokens: {tokenizer.decode(pred_tokens)}")
+        print(f"Predicted move: {tokenizer.decode(pred)}")
+        print('-'*10)
         pred = jnp.array(pred)
-        move_san = tokenizer.decode(pred)[0]
+        move_san = tokenizer.decode([pred.item()])[0]
 
         # End game condition
         if move_san == "<|endofgame|>":
             print("End of game detected.")
+            moves.append(move_san)
             break
 
         try:
@@ -74,8 +74,7 @@ if __name__ == "__main__":
             move = board.parse_san(move_san)
             board.push(move)
             moves.append(move_san)
-            tokens = jnp.concatenate([tokens, pred])
-            print(f"Tokens: {tokens}")
+            tokens = jnp.append(tokens, pred.item())
             print(f"Moves: {moves}")
 
             # Reset penalties and illegal moves

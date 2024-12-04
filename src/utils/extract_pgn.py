@@ -54,7 +54,6 @@ def extract_moves_from_pgn(pgn_file):
 
                 # Add start and end tokens
                 moves_string = "<|startofgame|> " + " ".join(moves) + " <|endofgame|>"
-                print(moves_string)
 
                 # Determine if the game ended with a checkmate
                 if node.board().is_checkmate():
