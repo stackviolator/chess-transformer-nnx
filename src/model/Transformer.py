@@ -60,7 +60,21 @@ class Transformer(nnx.Module):
         checkpointer = ocp.AsyncCheckpointer(ocp.StandardCheckpointHandler())
         checkpointer.save(path, args=ocp.args.StandardSave(state))
         checkpointer.wait_until_finished()
-        print("saved!")
+        print("Saved!")
+
+    def async_save(self, epoch, debug):
+        ckpt_dir = f"{os.getcwd()}/{self.cfg.ckpt_dir}_checkpoint"
+        path = epath.Path(ckpt_dir)
+        if path.exists(): path.rmtree()
+        print(f"Saving model to {self.cfg.ckpt_dir}_checkpoint...")
+        _, state = nnx.split(self)
+        checkpointer = ocp.AsyncCheckpointer(ocp.StandardCheckpointHandler())
+        checkpointer.save(path, args=ocp.args.StandardSave(state))
+        if debug:
+            print(f"Epoch: {epoch + 1}: saved checkpoint to {self.cfg.ckpt_dir}_checkpoint")
+
+        return checkpointer
+
 
     def load(self, filepath):
         path = epath.Path(os.getcwd() + '/' + self.cfg.ckpt_dir)

@@ -89,6 +89,10 @@ def train(model, optimizer):
             accuracy = correct_sum / total_count
             if not args.debug:
                 wandb.log({"accuracy":accuracy}, step=step)
+            checkpointer = model.async_save(epoch, args.debug)
+
+        print("Waiting for checkpointer to finish saving model...")
+        checkpointer.wait_until_finished()
 
     if args.debug == False:
         wandb.finish()
@@ -104,7 +108,7 @@ if __name__ == "__main__":
 
     cfg = TransformerConfig.from_yaml('configs/transformer_dev.cfg')
     cfg.d_vocab = len(tokenizer.tokens.values())
-    args = TransformerTrainingArgs.from_yaml('configs/training_args.cfg')
+    args = TransformerTrainingArgs.from_yaml('configs/training_args_debug.cfg')
 
     model = Transformer(cfg)
 
