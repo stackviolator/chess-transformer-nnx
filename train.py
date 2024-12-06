@@ -88,7 +88,7 @@ def train(model, optimizer):
                 total_count += jnp.size(batch["input_ids"]) - 1
             accuracy = correct_sum / total_count
             if not args.debug:
-                wandb.log({"accuracy":accuracy}, step=step)
+                wandb.log({"accuracy":accuracy}, step=epoch)
             checkpointer = model.async_save(epoch, args.debug)
 
         print("Waiting for checkpointer to finish saving model...")

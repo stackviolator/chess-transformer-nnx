@@ -75,7 +75,6 @@ class Transformer(nnx.Module):
 
         return checkpointer
 
-
     def load(self, filepath):
         path = epath.Path(os.getcwd() + '/' + self.cfg.ckpt_dir)
         checkpointer = ocp.AsyncCheckpointer(ocp.StandardCheckpointHandler())
