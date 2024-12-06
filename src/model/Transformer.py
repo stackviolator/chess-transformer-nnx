@@ -24,6 +24,7 @@ class TransformerConfig:
     stddev: float = 0.02
     ln_eps: float = 1e-5
     dropout_rate: float = 0.1
+    seed: int = 0
     pad_token_id: int | None = None
     ckpt_dir: str = "trained_models/checkpoints/"
 
@@ -55,10 +56,11 @@ class Transformer(nnx.Module):
     def save(self):
         path = epath.Path(os.getcwd() + '/' + self.cfg.ckpt_dir)
         if path.exists(): path.rmtree()
-        print(f"Saving model to {path}/... ", end="")
+        print(f"Saving model to {path}/... ")
         _, state = nnx.split(self)
-
-        # NNX docs were not working, using async checkpoint
+        # print(type(self.blocks[0].dropout.rngs))
+        # print(self.blocks[0].dropout)
+        import sys; sys.exit(0)
         checkpointer = ocp.AsyncCheckpointer(ocp.StandardCheckpointHandler())
         checkpointer.save(path, args=ocp.args.StandardSave(state))
         checkpointer.wait_until_finished()
@@ -68,7 +70,7 @@ class Transformer(nnx.Module):
         ckpt_dir = f"{os.getcwd()}/{self.cfg.ckpt_dir}_checkpoint"
         path = epath.Path(ckpt_dir)
         if path.exists(): path.rmtree()
-        print(f"\nSaving model to {self.cfg.ckpt_dir}_checkpoint...")
+        print(f"Saving model to {self.cfg.ckpt_dir}_checkpoint...")
         _, state = nnx.split(self)
         checkpointer = ocp.AsyncCheckpointer(ocp.StandardCheckpointHandler())
         checkpointer.save(path, args=ocp.args.StandardSave(state))
@@ -202,13 +204,15 @@ class TransformerBlock(nnx.Module):
         self.ln2 = LayerNorm(self.cfg)
         self.attn = Attention(self.cfg, rngs=nnx.Rngs(params=0))
         self.mlp = MLP(self.cfg)
-        self.dropout = nnx.Dropout(rate=self.cfg.dropout_rate, rngs=nnx.Rngs(dropout=0))
+        # self.dropout = nnx.Dropout(rate=self.cfg.dropout_rate, rngs=nnx.Rngs(dropout=0))
 
     def __call__(self, resid_pre: jnp.ndarray, train: bool) -> jnp.ndarray:
         resid_mid = self.attn(self.ln1(resid_pre)) + resid_pre
-        resid_mid = self.dropout(resid_mid, deterministic=not train)
+        # resid_mid = self.dropout(resid_mid, deterministic=not train)
+        resid_mid = nnx.Dropout(rate=self.cfg.dropout_rate, rngs=nnx.Rngs(dropout=self.cfg.seed))(resid_mid, deterministic=not train)
         resid_post = self.mlp(self.ln2(resid_mid)) + resid_mid
-        resid_post = self.dropout(resid_post, deterministic=not train)
+        # resid_post = self.dropout(resid_post, deterministic=not train)
+        resid_mid = nnx.Dropout(rate=self.cfg.dropout_rate, rngs=nnx.Rngs(dropout=self.cfg.seed))(resid_post, deterministic=not train)
         return resid_post
     
 class Unembed(nnx.Module):

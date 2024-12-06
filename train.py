@@ -88,7 +88,7 @@ def train(model, optimizer):
                 total_count += jnp.size(batch["input_ids"]) - 1
             accuracy = correct_sum / total_count
             if not args.debug:
-                wandb.log({"accuracy":accuracy}, step=epoch)
+                wandb.log({"accuracy":accuracy}, step=step)
             checkpointer = model.async_save(epoch, args.debug)
 
         print("Waiting for checkpointer to finish saving model...")
@@ -106,9 +106,9 @@ if __name__ == "__main__":
 
     pad_token_id = int(tokenizer.encode(["[PAD]"])[0])
 
-    cfg = TransformerConfig.from_yaml('configs/transformer_dev.cfg')
+    cfg = TransformerConfig.from_yaml('configs/transformer_dev_debug.cfg')
     cfg.d_vocab = len(tokenizer.tokens.values())
-    args = TransformerTrainingArgs.from_yaml('configs/training_args.cfg')
+    args = TransformerTrainingArgs.from_yaml('configs/training_args_debug.cfg')
 
     model = Transformer(cfg)
 
@@ -124,6 +124,9 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=True, collate_fn=GamesDataset.collate_fn)
 
     optimizer = nnx.Optimizer(model, optax.adamw(learning_rate=args.lr, weight_decay=args.weight_decay))
+
+    model.save()
+    # import sys; sys.exit(0)
 
     try:
         train(model, optimizer)
