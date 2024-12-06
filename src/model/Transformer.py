@@ -58,13 +58,11 @@ class Transformer(nnx.Module):
         if path.exists(): path.rmtree()
         print(f"Saving model to {path}/... ")
         _, state = nnx.split(self)
-        # print(type(self.blocks[0].dropout.rngs))
-        # print(self.blocks[0].dropout)
-        import sys; sys.exit(0)
         checkpointer = ocp.AsyncCheckpointer(ocp.StandardCheckpointHandler())
         checkpointer.save(path, args=ocp.args.StandardSave(state))
         checkpointer.wait_until_finished()
         print("Saved!")
+        import sys; sys.exit(0)
 
     def async_save(self, epoch, debug):
         ckpt_dir = f"{os.getcwd()}/{self.cfg.ckpt_dir}_checkpoint"
@@ -198,20 +196,27 @@ class MLP(nnx.Module):
         return out
 
 class TransformerBlock(nnx.Module):
+    """
+    Note on dropout:
+        Orbax does not support saving a jax PRNG for some reason. Therefore, can't have a class attr be something that stores a key.
+        My classes (ex. Attention) take in a prng as a param but never save it as an attr, so it wont get serialized by orbax in save()
+        However, nnx.Dropout does keep the prng as a class attr. So if the dropout layer is stored as a class attr, it will then store
+        a prng as an attr of that and when save() is called it will try to serialize the prng which make it explose and die with 
+        "TypeError: Cannot interpret 'key<fry>' as a data type". Therefore, keep the call to nnx.Dropout to be ephemeral, even if this make it
+        slightly slower.
+    https://github.com/google/orbax/issues/620
+    """
     def __init__(self, cfg: TransformerConfig):
         self.cfg = cfg
         self.ln1 = LayerNorm(self.cfg)
         self.ln2 = LayerNorm(self.cfg)
         self.attn = Attention(self.cfg, rngs=nnx.Rngs(params=0))
         self.mlp = MLP(self.cfg)
-        # self.dropout = nnx.Dropout(rate=self.cfg.dropout_rate, rngs=nnx.Rngs(dropout=0))
 
     def __call__(self, resid_pre: jnp.ndarray, train: bool) -> jnp.ndarray:
         resid_mid = self.attn(self.ln1(resid_pre)) + resid_pre
-        # resid_mid = self.dropout(resid_mid, deterministic=not train)
         resid_mid = nnx.Dropout(rate=self.cfg.dropout_rate, rngs=nnx.Rngs(dropout=self.cfg.seed))(resid_mid, deterministic=not train)
         resid_post = self.mlp(self.ln2(resid_mid)) + resid_mid
-        # resid_post = self.dropout(resid_post, deterministic=not train)
         resid_mid = nnx.Dropout(rate=self.cfg.dropout_rate, rngs=nnx.Rngs(dropout=self.cfg.seed))(resid_post, deterministic=not train)
         return resid_post
     

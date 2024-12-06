@@ -126,7 +126,6 @@ if __name__ == "__main__":
     optimizer = nnx.Optimizer(model, optax.adamw(learning_rate=args.lr, weight_decay=args.weight_decay))
 
     model.save()
-    # import sys; sys.exit(0)
 
     try:
         train(model, optimizer)
