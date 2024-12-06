@@ -20,8 +20,6 @@ if __name__ == "__main__":
     cfg.ckpt_dir = "trained_models/dev_checkpoint"
     transformer = Transformer(cfg)
 
-    # Train the model
-    # Test loading the model
     model = transformer.load(cfg.ckpt_dir)
 
     board = chess.Board()

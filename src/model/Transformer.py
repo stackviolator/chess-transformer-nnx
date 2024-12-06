@@ -13,15 +13,17 @@ import yaml
 @dataclass
 class TransformerConfig:
     debug: bool = True
+    train: bool = False
     d_model: int = 768
     d_vocab: int = 1974
     d_head: int = 64
+    d_mlp: int = d_model*4
     n_layers: int = 4
     n_heads: int = 4
     ctx_len: int = 256
     stddev: float = 0.02
     ln_eps: float = 1e-5
-    d_mlp: int = d_model*4
+    dropout_rate: float = 0.1
     pad_token_id: int | None = None
     ckpt_dir: str = "trained_models/checkpoints/"
 
@@ -46,7 +48,7 @@ class Transformer(nnx.Module):
     def __call__(self, tokens: jnp.ndarray) -> jnp.ndarray:
         resid = self.embed(tokens) + self.pos_embed(tokens)
         for block in self.blocks:
-            resid = block(resid)
+            resid = block(resid, self.train)
         logits = self.unembed(self.ln_final(resid))
         return logits
     
@@ -200,10 +202,13 @@ class TransformerBlock(nnx.Module):
         self.ln2 = LayerNorm(self.cfg)
         self.attn = Attention(self.cfg, rngs=nnx.Rngs(params=0))
         self.mlp = MLP(self.cfg)
+        self.dropout = nnx.Dropout(rate=self.cfg.dropout_rate, rngs=nnx.Rngs(dropout=0))
 
-    def __call__(self, resid_pre: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, resid_pre: jnp.ndarray, train: bool) -> jnp.ndarray:
         resid_mid = self.attn(self.ln1(resid_pre)) + resid_pre
+        resid_mid = self.dropout(resid_mid, deterministic=not train)
         resid_post = self.mlp(self.ln2(resid_mid)) + resid_mid
+        resid_post = self.dropout(resid_post, deterministic=not train)
         return resid_post
     
 class Unembed(nnx.Module):
