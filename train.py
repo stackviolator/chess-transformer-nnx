@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
     cfg = TransformerConfig.from_yaml('configs/transformer_dev.cfg')
     cfg.d_vocab = len(tokenizer.tokens.values())
-    args = TransformerTrainingArgs.from_yaml('configs/training_argscfg')
+    args = TransformerTrainingArgs.from_yaml('configs/training_args.cfg')
 
     model = Transformer(cfg)
 
