@@ -211,12 +211,13 @@ class TransformerBlock(nnx.Module):
         self.ln2 = LayerNorm(self.cfg)
         self.attn = Attention(self.cfg, rngs=nnx.Rngs(params=0))
         self.mlp = MLP(self.cfg)
+        self.dropout = nnx.Dropout(rate=self.cfg.dropout_rate)
 
     def __call__(self, resid_pre: jnp.ndarray, train: bool) -> jnp.ndarray:
         resid_mid = self.attn(self.ln1(resid_pre)) + resid_pre
-        resid_mid = nnx.Dropout(rate=self.cfg.dropout_rate, rngs=nnx.Rngs(dropout=self.cfg.seed))(resid_mid, deterministic=not train)
+        resid_mid = self.dropout(resid_mid, deterministic=not train, rngs=nnx.Rngs(dropout=0))
         resid_post = self.mlp(self.ln2(resid_mid)) + resid_mid
-        resid_mid = nnx.Dropout(rate=self.cfg.dropout_rate, rngs=nnx.Rngs(dropout=self.cfg.seed))(resid_post, deterministic=not train)
+        resid_post = self.dropout(resid_post, deterministic=not train, rngs=nnx.Rngs(dropout=0))
         return resid_post
     
 class Unembed(nnx.Module):
