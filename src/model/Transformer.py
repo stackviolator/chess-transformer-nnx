@@ -62,7 +62,6 @@ class Transformer(nnx.Module):
         checkpointer.save(path, args=ocp.args.StandardSave(state))
         checkpointer.wait_until_finished()
         print("Saved!")
-        import sys; sys.exit(0)
 
     def async_save(self, epoch, debug):
         ckpt_dir = f"{os.getcwd()}/{self.cfg.ckpt_dir}_checkpoint"
