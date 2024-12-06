@@ -106,9 +106,9 @@ if __name__ == "__main__":
 
     pad_token_id = int(tokenizer.encode(["[PAD]"])[0])
 
-    cfg = TransformerConfig.from_yaml('configs/transformer_dev_debug.cfg')
+    cfg = TransformerConfig.from_yaml('configs/transformer_dev.cfg')
     cfg.d_vocab = len(tokenizer.tokens.values())
-    args = TransformerTrainingArgs.from_yaml('configs/training_args_debug.cfg')
+    args = TransformerTrainingArgs.from_yaml('configs/training_argscfg')
 
     model = Transformer(cfg)
 
