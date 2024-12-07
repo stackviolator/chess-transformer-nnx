@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     cfg = TransformerConfig.from_yaml('configs/transformer_dev.cfg')
     cfg.d_vocab = len(tokenizer.tokens.values())
-    cfg.ckpt_dir = "trained_models/dev_checkpoint"
+    cfg.ckpt_dir = "trained_models/dev"
     transformer = Transformer(cfg)
 
     model = transformer.load(cfg.ckpt_dir)
