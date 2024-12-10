@@ -1,4 +1,4 @@
-# Chess Transformer Project
+# chess-transformer-nnx
 
 Custom transformer written in Jax to predict the next chess move in a given sequence :)
 
@@ -36,7 +36,7 @@ The `generate.py` script generates chess moves using the trained Transformer mod
 ### Example Usage
 
 1. **Prepare the Model:**
-   Ensure the trained model is saved in `trained_models/` and matches the configuration in `configs/transformer_inference.cfg`.
+   Ensure the trained model is saved in `trained_models/` and matches the configuration file in `configs`.
 
 2. **Run the Script:**
    ```bash
