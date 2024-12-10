@@ -5,6 +5,7 @@ data/
 wandb/
 trained_models/
 output/
+transformer.ipynb
 
 # Ignore Python bytecode
 __pycache__/
