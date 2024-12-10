@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+import argparse
+from dataclasses import dataclass, asdict
 from flax import nnx
 import jax.numpy as jnp
 import jax
@@ -64,22 +65,22 @@ def validation_step(model, batch: dict) -> jnp.ndarray:
     return correct
 
 def train(model, optimizer):
-    if args.debug == False:
-        wandb.init(project=args.wandb_project, name=args.wandb_name, config=args)
+    if training_args_config.debug == False:
+        wandb.init(project=training_args_config.wandb_project, name=training_args_config.wandb_name, config=training_args_config)
     accuracy = jnp.nan
-    total_steps = args.epochs * args.max_steps_per_epoch
+    total_steps = training_args_config.epochs * training_args_config.max_steps_per_epoch
     step = 0
 
     with tqdm(total=total_steps, desc="Training Epochs") as progress_bar:
-        for epoch in range(args.epochs):
+        for epoch in range(training_args_config.epochs):
             for i, batch in enumerate(train_loader):
                 loss = training_step(model, optimizer, batch)
-                if not args.debug:
+                if not training_args_config.debug:
                     wandb.log({"train_loss":loss}, step=step)
                 progress_bar.update()
                 progress_bar.set_description(f"Epoch {epoch+1}, loss: {loss:.3f}, accuracy: {accuracy:.2f}")
                 step += 1
-                if i >= args.max_steps_per_epoch:
+                if i >= training_args_config.max_steps_per_epoch:
                     break
             correct_sum = 0
             total_count = 0
@@ -87,43 +88,84 @@ def train(model, optimizer):
                 correct_sum += jnp.sum(validation_step(model, batch))
                 total_count += jnp.size(batch["input_ids"]) - 1
             accuracy = correct_sum / total_count
-            if not args.debug:
+            if not training_args_config.debug:
                 wandb.log({"accuracy":accuracy}, step=step)
-            checkpointer = model.async_save(epoch, args.debug)
+            checkpointer = model.async_save(epoch, training_args_config.debug)
 
         print("Waiting for checkpointer to finish saving model...")
         checkpointer.wait_until_finished()
 
-    if args.debug == False:
+    if training_args_config.debug == False:
         wandb.finish()
+
+def parse_args():
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(description="Chess Transformer Trainer")
+    parser.add_argument(
+        '-c',
+        '--config',
+        type=str,
+        default='configs/transformer_dev.cfg',
+        help="Path to the transformer configuration file"
+    )
+    parser.add_argument(
+        '-a',
+        '--training_args',
+        type=str,
+        default='configs/training_args.cfg',
+        help="Path to the training arguments file"
+    )
+    parser.add_argument(
+        '-t',
+        '--tokenizer',
+        type=str,
+        default='src/tokenizer/vocab.json',
+        help="Path to the tokenzier vocab file"
+    )
+    parser.add_argument(
+        '-d',
+        '--debug',
+        action='store_true',
+        help="Enable debugging mode"
+    )
+    return parser.parse_args()
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore", category=FutureWarning)
 
+    args = parse_args()
+
     # Tokenizer
     tokenizer = ChessTokenizer()
-    tokenizer.load_tokenizer("src/tokenizer/vocab.json")
+    tokenizer.load_tokenizer(args.tokenizer)
 
     pad_token_id = int(tokenizer.encode(["[PAD]"])[0])
 
-    cfg = TransformerConfig.from_yaml('configs/transformer_dev.cfg')
-    cfg.d_vocab = len(tokenizer.tokens.values())
-    args = TransformerTrainingArgs.from_yaml('configs/training_args.cfg')
+    transformer_config = TransformerConfig.from_yaml(args.config)
+    training_args_config = TransformerTrainingArgs.from_yaml(args.training_args)
 
-    model = Transformer(cfg)
+    if args.debug:
+        transformer_config.debug = args.debug
+        training_args_config.debug = args.debug
+
+    # Update config values based on tokenizer
+    transformer_config.d_vocab = len(tokenizer.tokens.values())
+    transformer_config.pad_token_id = pad_token_id
+
+    model = Transformer(transformer_config)
 
     # Dataset and loaders
     train_file = 'data/clean/games_data.csv'
-    dataset = GamesDataset(train_file, tokenizer, context_length=cfg.ctx_len)
+    dataset = GamesDataset(train_file, tokenizer, context_length=transformer_config.ctx_len)
     dataset_dict = dataset.train_test_split(test_size=1000)
 
     train_dataset = dataset_dict["train"]
     test_dataset = dataset_dict["test"]
 
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=True, collate_fn=GamesDataset.collate_fn)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=True, collate_fn=GamesDataset.collate_fn)
+    train_loader = DataLoader(train_dataset, batch_size=training_args_config.batch_size, shuffle=True, num_workers=0, pin_memory=True, collate_fn=GamesDataset.collate_fn)
+    test_loader = DataLoader(test_dataset, batch_size=training_args_config.batch_size, shuffle=True, num_workers=0, pin_memory=True, collate_fn=GamesDataset.collate_fn)
 
-    optimizer = nnx.Optimizer(model, optax.adamw(learning_rate=args.lr, weight_decay=args.weight_decay))
+    optimizer = nnx.Optimizer(model, optax.adamw(learning_rate=training_args_config.lr, weight_decay=training_args_config.weight_decay))
 
     try:
         train(model, optimizer)
@@ -140,4 +182,4 @@ if __name__ == "__main__":
 
     # Test loading the model
     print("testing load :)...")
-    test_model = model.load(cfg.ckpt_dir)
+    test_model = model.load(transformer_config.ckpt_dir)

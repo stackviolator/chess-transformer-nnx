@@ -41,7 +41,6 @@ class ChessSampler:
     def sample_top_k(self, logits: jnp.ndarray, k: int):
         probs = nnx.softmax(logits[0,-1,:])
         values, indicies = jax.lax.top_k(probs, k)
-        print(f"values: {values}")
         idx = jax.random.categorical(self.key, logits=values)
         return [indicies[idx]], indicies
 
@@ -51,7 +50,6 @@ class ChessSampler:
         cumul_probs = jnp.cumsum(nnx.softmax(logits, axis=-1), axis=-1)
         n_keep = jnp.searchsorted(cumul_probs[-1,-1], p, side="right")
         n_keep = max(n_keep, min_keep)
-
         keep_indicies = indicies[-1, -1, :n_keep]
         keep_logits = logits[-1, -1, :n_keep]
         idx = jax.random.categorical(self.key, logits=keep_logits)
