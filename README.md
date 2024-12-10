@@ -8,8 +8,8 @@ Custom transformer written in Jax to predict the next chess move in a given sequ
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/stackviolator/todo-lol
-   cd todo-lol
+   git clone https://github.com/stackviolator/chess-transformer-nnx
+   cd chess-transformer-nnx
    ```
 
 2. Install the required dependencies:
